@@ -2,7 +2,9 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
 import Layout from './components/Layout';
-import UserPanel from './pages/UserPanel';
+import DashboardOverview from './pages/DashboardOverview';
+import ApplicationForm from './pages/ApplicationForm';
+import ApplicationsList from './pages/ApplicationsList';
 import EmployerPanel from './pages/EmployerPanel';
 import MentorPanel from './pages/MentorPanel';
 import AdminPanel from './pages/AdminPanel';
@@ -14,16 +16,39 @@ function App() {
     <AppProvider>
       <Router>
         <Routes>
-          {/* Public Auth Route */}
+          {/* Public Auth / Login Route */}
           <Route path="/auth" element={<AuthPage />} />
+          <Route path="/login" element={<Navigate to="/auth" replace />} />
 
           {/* Protected Routes Wrapper */}
           <Route path="/" element={<Layout />}>
+            {/* Dashboard Overview */}
             <Route index element={
-              <ProtectedRoute allowedRoles={['user', 'admin']}>
-                <UserPanel />
+              <ProtectedRoute allowedRoles={['user', 'employer', 'mentor', 'admin']}>
+                <DashboardOverview />
               </ProtectedRoute>
             } />
+
+            {/* Application Form Page */}
+            <Route path="apply" element={
+              <ProtectedRoute allowedRoles={['user', 'employer', 'mentor', 'admin']}>
+                <ApplicationForm />
+              </ProtectedRoute>
+            } />
+            <Route path="apply/:jobId" element={
+              <ProtectedRoute allowedRoles={['user', 'employer', 'mentor', 'admin']}>
+                <ApplicationForm />
+              </ProtectedRoute>
+            } />
+
+            {/* Tracked Applications View */}
+            <Route path="applications" element={
+              <ProtectedRoute allowedRoles={['user', 'employer', 'mentor', 'admin']}>
+                <ApplicationsList />
+              </ProtectedRoute>
+            } />
+
+            {/* Role-Specific Portals */}
             <Route path="employer" element={
               <ProtectedRoute allowedRoles={['employer', 'admin']}>
                 <EmployerPanel />
@@ -41,7 +66,7 @@ function App() {
             } />
           </Route>
 
-          {/* Catch all redirect */}
+          {/* Catch-all Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>

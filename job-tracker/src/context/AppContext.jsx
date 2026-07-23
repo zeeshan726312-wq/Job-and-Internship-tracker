@@ -9,19 +9,19 @@ const initialJobs = [
 ];
 
 const initialApplications = [
-  { id: 101, jobId: 1, applicantName: 'user', status: 'Applied', interviewSchedule: '', feedback: '' },
+  { id: 101, jobId: 1, applicantName: 'User Demo', status: 'Applied', interviewSchedule: '', feedback: '' },
 ];
 
 const initialPersonalApps = [
-  { id: 301, applicantName: 'user', title: 'Software Engineer', company: 'Google', status: 'Applied', link: 'https://careers.google.com' }
+  { id: 301, applicantName: 'User Demo', title: 'Software Engineer', company: 'Google', type: 'Job', status: 'Applied', link: 'https://careers.google.com' }
 ];
 
 const initialCourses = [
-  { id: 401, mentorName: 'mentor', title: 'React Masterclass', description: 'Advanced React concepts and interview prep.' }
+  { id: 401, mentorName: 'Mentor Demo', title: 'React Masterclass', description: 'Advanced React concepts and interview prep.' }
 ];
 
 const initialMentorships = [
-  { id: 201, mentorName: 'mentor', menteeName: 'user', courseId: 401, status: 'Pending' }
+  { id: 201, mentorName: 'Mentor Demo', menteeName: 'User Demo', courseId: 401, status: 'Pending' }
 ];
 
 // Hardcoded Mock Users for Demo
@@ -62,15 +62,12 @@ export const AppProvider = ({ children }) => {
       }
       return { success: true };
     }
-    return { success: false, error: 'Invalid email, password, or role' };
+    return { success: false, error: 'Invalid email, password, or role selection' };
   };
 
   const signup = (userData) => {
     if (usersDb.some(u => u.email === userData.email)) {
       return { success: false, error: 'User already registered with this email' };
-    }
-    if (usersDb.some(u => u.password === userData.password)) {
-      return { success: false, error: 'Password already exists, please choose a different one' };
     }
     
     const newUser = { ...userData, registrationDate: new Date().toISOString().split('T')[0] };
@@ -82,6 +79,25 @@ export const AppProvider = ({ children }) => {
     return { success: true };
   };
 
+  const resetPassword = (email, newPassword) => {
+    const targetUserIndex = usersDb.findIndex(u => u.email.toLowerCase() === email.toLowerCase());
+    if (targetUserIndex === -1) {
+      return { success: false, error: 'No account registered with this email address.' };
+    }
+    
+    const updatedUsers = [...usersDb];
+    updatedUsers[targetUserIndex].password = newPassword;
+    setUsersDb(updatedUsers);
+
+    if (currentUser && currentUser.email.toLowerCase() === email.toLowerCase()) {
+      const updatedUser = { ...currentUser, password: newPassword };
+      setCurrentUser(updatedUser);
+      localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+    }
+    
+    return { success: true };
+  };
+
   const logout = () => {
     setCurrentUser(null);
     localStorage.removeItem('currentUser');
@@ -89,6 +105,10 @@ export const AppProvider = ({ children }) => {
 
   const deleteUser = (email) => {
     setUsersDb(usersDb.filter(u => u.email !== email));
+  };
+
+  const updateUserRole = (email, newRole) => {
+    setUsersDb(usersDb.map(u => u.email === email ? { ...u, role: newRole } : u));
   };
 
   // Job Actions
@@ -120,16 +140,20 @@ export const AppProvider = ({ children }) => {
 
   // Personal Tracker Actions
   const addPersonalApp = (app) => {
-    setPersonalApps([...personalApps, { ...app, id: Date.now(), applicantName: currentUser.name }]);
+    setPersonalApps([...personalApps, { ...app, id: Date.now(), applicantName: currentUser?.name || 'user' }]);
   };
 
   const updatePersonalAppStatus = (appId, newStatus) => {
     setPersonalApps(personalApps.map(app => app.id === appId ? { ...app, status: newStatus } : app));
   };
 
+  const deletePersonalApp = (id) => {
+    setPersonalApps(personalApps.filter(a => a.id !== id));
+  };
+
   // Mentor & Course Actions
   const addCourse = (course) => {
-    setCourses([...courses, { ...course, id: Date.now(), mentorName: currentUser.name }]);
+    setCourses([...courses, { ...course, id: Date.now(), mentorName: currentUser?.name || 'Mentor' }]);
   };
 
   const requestMentorship = (courseId, mentorName, menteeName) => {
@@ -146,10 +170,10 @@ export const AppProvider = ({ children }) => {
 
   return (
     <AppContext.Provider value={{
-      currentUser, login, signup, logout, usersDb, deleteUser,
+      currentUser, login, signup, resetPassword, logout, usersDb, deleteUser, updateUserRole,
       jobs, addJob, deleteJob,
       applications, applyForJob, updateApplicationStatus, updateApplicationDetails, deleteApplication,
-      personalApps, addPersonalApp, updatePersonalAppStatus,
+      personalApps, addPersonalApp, updatePersonalAppStatus, deletePersonalApp,
       courses, addCourse,
       mentorships, requestMentorship, updateMentorshipStatus, deleteMentorship
     }}>
