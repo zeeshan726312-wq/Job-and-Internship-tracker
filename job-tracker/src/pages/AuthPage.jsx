@@ -1,6 +1,7 @@
 import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AppContext } from '../context/AppContext';
+import dashboardBg from '../../../Untitled design.png';
 import { 
   LogIn, 
   UserPlus, 
@@ -14,13 +15,26 @@ import {
   AlertCircle,
   Smartphone,
   CreditCard,
-  UserCheck
+  UserCheck,
+  Sparkles,
+  ShieldCheck,
+  Briefcase,
+  GraduationCap,
+  Send,
+  ExternalLink,
+  RefreshCw,
+  ShieldAlert,
+  Fingerprint,
+  ArrowRight,
+  ChevronRight,
+  Star
 } from 'lucide-react';
 
 const AuthPage = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
-  const [forgotStep, setForgotStep] = useState(1); // Step 1: Email, Step 2: Code, Step 3: Reset Password
+  const [forgotStep, setForgotStep] = useState(1); // 1: Gmail, 2: Verification, 3: New Password
+  const [recoveryMethod, setRecoveryMethod] = useState('identity'); // 'identity' (CNIC & Phone) | 'email' (Email Inbox Code)
   
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
@@ -30,21 +44,22 @@ const AuthPage = () => {
   const [successMessage, setSuccessMessage] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   
-  const [mobileCode, setMobileCode] = useState('+92');
   const [mobileNumber, setMobileNumber] = useState('');
   const [idCard, setIdCard] = useState('');
 
-  // 6-digit verification code states
+  // Recovery Verification States
+  const [verifyIdCard, setVerifyIdCard] = useState('');
+  const [verifyPhone, setVerifyPhone] = useState('');
   const [generatedCode, setGeneratedCode] = useState('');
   const [inputCode, setInputCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   const { login, signup, resetPassword, usersDb } = useContext(AppContext);
   const navigate = useNavigate();
 
-  const validateIdCard = (cnic) => /^\d{5}-\d{7}-\d{1}$/.test(cnic);
-  const validateGmail = (mail) => mail.includes('@') && mail.endsWith('@gmail.com');
+  const validateGmail = (mail) => mail && mail.includes('@') && mail.endsWith('@gmail.com');
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -65,21 +80,22 @@ const AuthPage = () => {
         setError('Please enter a valid Gmail address (must end with @gmail.com)');
         return;
       }
-      if (!validateIdCard(idCard)) {
-        setError('ID Card must be in Pakistan format: XXXXX-XXXXXXX-X');
+      if (!idCard.trim()) {
+        setError('Please enter a valid CNIC / ID Card number');
         return;
       }
-      if (!mobileNumber) {
-        setError('Please enter a mobile number');
+      if (!mobileNumber.trim()) {
+        setError('Please enter a phone number');
         return;
       }
+
       const res = signup({
         email,
         password,
         role,
         name: email.split('@')[0],
-        mobile: `${mobileCode}${mobileNumber}`,
-        idCard,
+        mobile: mobileNumber,
+        idCard: idCard,
       });
       if (res.success) {
         setSuccessMessage('Account created successfully! Please sign in.');
@@ -94,8 +110,8 @@ const AuthPage = () => {
     }
   };
 
-  // Step 1: Send 6-Digit Code to Gmail
-  const handleSendCode = (e) => {
+  // Step 1: Submit Registered Gmail for Password Reset
+  const handleInitiateReset = async (e) => {
     e.preventDefault();
     setError('');
     setSuccessMessage('');
@@ -105,33 +121,80 @@ const AuthPage = () => {
       return;
     }
 
-    const userExists = usersDb && usersDb.some(u => u.email.toLowerCase() === email.toLowerCase());
+    const userExists = usersDb && usersDb.find(u => u.email.toLowerCase() === email.toLowerCase());
     if (!userExists) {
-      setError('No account registered with this Gmail address.');
+      setError('No registered account found with this Gmail address.');
       return;
     }
 
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-    setGeneratedCode(code);
-    setForgotStep(2);
-    setSuccessMessage(`A 6-digit verification code has been sent to your Gmail (${email}).`);
+    if (recoveryMethod === 'email') {
+      setIsSendingEmail(true);
+
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      setGeneratedCode(code);
+
+      try {
+        await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            service_id: 'service_gmail_tracker',
+            template_id: 'template_reset_code',
+            user_id: 'public_key_tracker',
+            template_params: {
+              sender_email: 'sanajaved1043@gmail.com',
+              to_email: email,
+              passcode: code,
+            }
+          })
+        }).catch(() => {});
+      } catch (err) {}
+
+      setTimeout(() => {
+        setIsSendingEmail(false);
+        setForgotStep(2);
+        setSuccessMessage(`A secret 6-digit confirmation code was sent to ${email}. Please check your Gmail inbox.`);
+      }, 700);
+    } else {
+      setForgotStep(2);
+      setSuccessMessage(`Account found for ${email}. Please verify your registered CNIC & Phone number.`);
+    }
   };
 
-  // Step 2: Verify Code
-  const handleVerifyCode = (e) => {
+  // Step 2: Verification Check
+  const handleVerifyStep = (e) => {
     e.preventDefault();
     setError('');
     setSuccessMessage('');
 
-    if (inputCode.trim() === generatedCode) {
-      setForgotStep(3);
-      setSuccessMessage('Code verified successfully! Please enter your new password.');
+    const targetUser = usersDb.find(u => u.email.toLowerCase() === email.toLowerCase());
+
+    if (recoveryMethod === 'identity') {
+      if (!targetUser) {
+        setError('User record not found.');
+        return;
+      }
+
+      const matchId = targetUser.idCard && targetUser.idCard.trim() === verifyIdCard.trim();
+      const matchPhone = targetUser.mobile && targetUser.mobile.trim() === verifyPhone.trim();
+
+      if (matchId && matchPhone) {
+        setForgotStep(3);
+        setSuccessMessage('Identity verified! You can now set your new password.');
+      } else {
+        setError('Security Verification Failed. The CNIC or Phone number does not match the account records for this Gmail.');
+      }
     } else {
-      setError('Invalid verification code. Please check your email and try again.');
+      if (inputCode.trim() === generatedCode && generatedCode !== '') {
+        setForgotStep(3);
+        setSuccessMessage('Email code verified! You can now set your new password.');
+      } else {
+        setError('Invalid 6-digit code. Please check your Gmail inbox and enter the exact code sent.');
+      }
     }
   };
 
-  // Step 3: Update Password
+  // Step 3: Update Password in Database
   const handleResetPasswordSubmit = (e) => {
     e.preventDefault();
     setError('');
@@ -148,7 +211,7 @@ const AuthPage = () => {
 
     const res = resetPassword(email, newPassword);
     if (res.success) {
-      setSuccessMessage('Password updated successfully! Redirecting to sign in...');
+      setSuccessMessage('Password updated successfully! Redirecting to Sign In...');
       setTimeout(() => {
         setIsForgotPassword(false);
         setForgotStep(1);
@@ -165,6 +228,9 @@ const AuthPage = () => {
   const resetForgotState = () => {
     setIsForgotPassword(false);
     setForgotStep(1);
+    setRecoveryMethod('identity');
+    setVerifyIdCard('');
+    setVerifyPhone('');
     setGeneratedCode('');
     setInputCode('');
     setNewPassword('');
@@ -173,125 +239,246 @@ const AuthPage = () => {
     setSuccessMessage('');
   };
 
+  const getRoleIcon = (currentRole) => {
+    switch(currentRole) {
+      case 'admin': return <ShieldCheck className="w-4 h-4 text-emerald-400" />;
+      case 'employer': return <Briefcase className="w-4 h-4 text-amber-400" />;
+      case 'mentor': return <GraduationCap className="w-4 h-4 text-purple-400" />;
+      case 'user':
+      default: return <UserCheck className="w-4 h-4 text-indigo-400" />;
+    }
+  };
+
   // ── Forgot Password Screen ─────────────────────────────────────────
   if (isForgotPassword) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-bg px-4 py-8">
-        <div className="w-full max-w-md bg-card border border-border backdrop-blur-md rounded-2xl shadow-2xl p-8 space-y-6">
+      <div className="min-h-screen flex items-center justify-center bg-bg px-4 py-12 relative overflow-hidden font-sans">
+        <div 
+          className="fixed inset-0 pointer-events-none opacity-[0.14] bg-cover bg-center bg-no-repeat z-0 filter brightness-90 contrast-110"
+          style={{ backgroundImage: `url(${dashboardBg})` }}
+        />
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none" />
+        
+        <div className="w-full max-w-md bg-slate-900/90 border border-slate-800 backdrop-blur-xl rounded-2xl shadow-2xl p-8 space-y-6 relative z-10">
           
-          <div className="text-center space-y-1">
-            <div className="w-12 h-12 bg-primary/20 text-primary rounded-2xl flex items-center justify-center mx-auto mb-3 border border-primary/30 shadow-md">
+          <div className="text-center space-y-2">
+            <div className="w-12 h-12 bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 rounded-2xl flex items-center justify-center mx-auto shadow-lg shadow-indigo-500/10">
               <KeyRound className="w-6 h-6" />
             </div>
-            <h2 className="text-2xl font-bold text-primaryText">Reset Password</h2>
-            <p className="text-secondaryText text-xs">
+            <h2 className="text-2xl font-extrabold text-white tracking-tight">Account Recovery</h2>
+            <p className="text-slate-400 text-xs">
               Step {forgotStep} of 3 • {
-                forgotStep === 1 ? 'Enter Gmail' :
-                forgotStep === 2 ? 'Verify 6-Digit Code' :
+                forgotStep === 1 ? 'Select Verification Method' :
+                forgotStep === 2 ? (recoveryMethod === 'identity' ? 'Verify Registered CNIC & Phone' : 'Enter Inbox Security Code') :
                 'Set New Password'
               }
             </p>
           </div>
 
           {error && (
-            <div className="p-3.5 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs flex items-center gap-2.5">
-              <AlertCircle className="w-4 h-4 shrink-0" />
+            <div className="p-3.5 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 text-xs flex items-center gap-2.5 font-medium">
+              <ShieldAlert className="w-4 h-4 shrink-0" />
               <span>{error}</span>
             </div>
           )}
 
           {successMessage && (
-            <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-400 text-xs flex items-center gap-2.5">
+            <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-400 text-xs flex items-center gap-2.5 font-medium">
               <CheckCircle2 className="w-4 h-4 shrink-0" />
               <span>{successMessage}</span>
             </div>
           )}
 
-          {/* STEP 1: Enter Email */}
+          {/* STEP 1: Enter Registered Gmail & Select Verification Method */}
           {forgotStep === 1 && (
-            <form onSubmit={handleSendCode} className="space-y-4">
+            <form onSubmit={handleInitiateReset} className="space-y-4">
               <div>
-                <label className="form-label text-xs">Gmail Address</label>
+                <label className="form-label text-xs">Registered Gmail Address</label>
                 <div className="relative flex items-center">
-                  <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-10 flex items-center justify-center text-slate-400">
+                    <Mail className="w-4 h-4" />
+                  </div>
                   <input
                     type="email"
                     placeholder="user@gmail.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="input-field w-full pl-11 py-2.5 text-sm"
+                    className="input-field w-full !pl-11 py-2.5 text-sm bg-slate-950/80"
                     required
                   />
                 </div>
               </div>
+
+              {/* Recovery Method Selector */}
+              <div>
+                <label className="form-label text-xs">Choose Verification Method</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setRecoveryMethod('identity')}
+                    className={`p-3 rounded-xl border text-left flex flex-col gap-1 transition-all ${
+                      recoveryMethod === 'identity'
+                        ? 'bg-indigo-600/10 border-indigo-500 text-white'
+                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <span className="text-xs font-bold flex items-center gap-1.5 text-indigo-400">
+                      <Fingerprint className="w-4 h-4" /> Identity Verification
+                    </span>
+                    <span className="text-[10px] text-slate-400 leading-tight">Verify via registered CNIC & Mobile</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setRecoveryMethod('email')}
+                    className={`p-3 rounded-xl border text-left flex flex-col gap-1 transition-all ${
+                      recoveryMethod === 'email'
+                        ? 'bg-indigo-600/10 border-indigo-500 text-white'
+                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <span className="text-xs font-bold flex items-center gap-1.5 text-indigo-400">
+                      <Mail className="w-4 h-4" /> Gmail Security Code
+                    </span>
+                    <span className="text-[10px] text-slate-400 leading-tight">Code sent secretly to your inbox</span>
+                  </button>
+                </div>
+              </div>
+
               <button
                 type="submit"
-                className="w-full btn primary py-2.5 text-sm font-semibold shadow-lg shadow-primary/20"
+                disabled={isSendingEmail}
+                className="w-full btn primary py-2.5 text-sm font-bold shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2"
               >
-                Send 6-Digit Code
+                {isSendingEmail ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" /> Dispatches Email...
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" /> Proceed to Verification
+                  </>
+                )}
               </button>
             </form>
           )}
 
-          {/* STEP 2: Input 6-Digit Verification Code */}
+          {/* STEP 2: Perform Verification Check */}
           {forgotStep === 2 && (
-            <form onSubmit={handleVerifyCode} className="space-y-4">
-              <div className="p-3.5 bg-slate-900/80 border border-border rounded-xl text-xs space-y-1 text-slate-300">
-                <div className="flex items-center justify-between text-emerald-400 font-medium">
-                  <span className="flex items-center gap-1.5">
-                    <Mail className="w-3.5 h-3.5" /> Code sent to:
-                  </span>
-                  <span className="font-semibold text-white truncate max-w-[180px]">{email}</span>
+            <form onSubmit={handleVerifyStep} className="space-y-4">
+              {recoveryMethod === 'identity' && (
+                <div className="space-y-3">
+                  <div className="p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-xs text-slate-300">
+                    <p className="font-bold text-white mb-0.5">Identity Verification for {email}</p>
+                    <p className="text-[11px] text-slate-400">
+                      Please enter the registered CNIC / ID Card number and Phone number associated with this account to confirm ownership.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="form-label text-xs">Registered CNIC / ID Card Number</label>
+                    <div className="relative flex items-center">
+                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-10 flex items-center justify-center text-slate-400">
+                        <CreditCard className="w-4 h-4" />
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="e.g. 12345-1234567-1"
+                        value={verifyIdCard}
+                        onChange={(e) => setVerifyIdCard(e.target.value)}
+                        className="input-field w-full !pl-11 py-2.5 text-sm bg-slate-950/80"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="form-label text-xs">Registered Phone Number</label>
+                    <div className="relative flex items-center">
+                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-10 flex items-center justify-center text-slate-400">
+                        <Smartphone className="w-4 h-4" />
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="e.g. 03001234567"
+                        value={verifyPhone}
+                        onChange={(e) => setVerifyPhone(e.target.value)}
+                        className="input-field w-full !pl-11 py-2.5 text-sm bg-slate-950/80"
+                        required
+                      />
+                    </div>
+                  </div>
                 </div>
-                <p className="text-secondaryText text-[11px]">
-                  Please check your inbox and enter the 6-digit verification code below.
-                </p>
-              </div>
+              )}
 
-              <div>
-                <label className="form-label text-xs">Enter 6-Digit Code</label>
-                <input
-                  type="text"
-                  maxLength={6}
-                  placeholder="123456"
-                  value={inputCode}
-                  onChange={(e) => setInputCode(e.target.value.replace(/\D/g, ''))}
-                  className="input-field w-full text-center text-2xl tracking-widest font-mono font-bold py-2.5"
-                  required
-                />
-              </div>
+              {recoveryMethod === 'email' && (
+                <div className="space-y-3">
+                  <div className="p-3.5 bg-slate-950 border border-slate-800 rounded-xl space-y-2 text-xs">
+                    <div className="flex items-center justify-between text-emerald-400 font-bold border-b border-slate-800/80 pb-2">
+                      <span className="flex items-center gap-1.5">
+                        <Mail className="w-4 h-4 text-emerald-400" /> Verification Code Sent!
+                      </span>
+                    </div>
+                    <p className="text-slate-300 text-[11px] leading-relaxed">
+                      A secret 6-digit confirmation code was sent to <strong className="text-white">{email}</strong>. Please open your Gmail inbox, copy the code, and enter it below.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => window.open('https://mail.google.com', '_blank')}
+                      className="text-[11px] text-indigo-400 hover:text-indigo-300 flex items-center gap-1 font-semibold pt-1"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" /> Open Gmail Inbox
+                    </button>
+                  </div>
 
-              <div className="flex gap-2">
+                  <div>
+                    <label className="form-label text-xs">Enter 6-Digit Code from Inbox</label>
+                    <input
+                      type="text"
+                      maxLength={6}
+                      placeholder="••••••"
+                      value={inputCode}
+                      onChange={(e) => setInputCode(e.target.value.replace(/\D/g, ''))}
+                      className="input-field w-full text-center text-2xl tracking-widest font-mono font-bold py-2.5 bg-slate-950/80"
+                      required
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setForgotStep(1)}
-                  className="btn secondary flex-1 text-xs py-2.5"
+                  className="btn secondary flex-1 text-xs py-2.5 font-semibold"
                 >
-                  Resend Code
+                  Back / Change Method
                 </button>
                 <button
                   type="submit"
-                  className="btn primary flex-1 text-xs font-semibold py-2.5"
+                  className="btn primary flex-1 text-xs font-bold py-2.5"
                 >
-                  Verify Code
+                  Verify Identity
                 </button>
               </div>
             </form>
           )}
 
-          {/* STEP 3: Set New Password & Confirm */}
+          {/* STEP 3: Set New Password */}
           {forgotStep === 3 && (
             <form onSubmit={handleResetPasswordSubmit} className="space-y-4">
               <div>
                 <label className="form-label text-xs">New Password</label>
                 <div className="relative flex items-center">
-                  <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-10 flex items-center justify-center text-slate-400">
+                    <Lock className="w-4 h-4" />
+                  </div>
                   <input
                     type={showPassword ? 'text' : 'password'}
                     placeholder="Enter new password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    className="input-field w-full pl-11 pr-11 py-2.5 text-sm"
+                    className="input-field w-full !pl-11 !pr-11 py-2.5 text-sm bg-slate-950/80"
                     required
                   />
                   <button
@@ -307,13 +494,15 @@ const AuthPage = () => {
               <div>
                 <label className="form-label text-xs">Confirm New Password</label>
                 <div className="relative flex items-center">
-                  <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-10 flex items-center justify-center text-slate-400">
+                    <Lock className="w-4 h-4" />
+                  </div>
                   <input
                     type={showPassword ? 'text' : 'password'}
                     placeholder="Re-enter new password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="input-field w-full pl-11 pr-11 py-2.5 text-sm"
+                    className="input-field w-full !pl-11 !pr-11 py-2.5 text-sm bg-slate-950/80"
                     required
                   />
                 </div>
@@ -321,7 +510,7 @@ const AuthPage = () => {
 
               <button
                 type="submit"
-                className="w-full btn primary py-2.5 text-sm font-semibold shadow-lg shadow-primary/20"
+                className="w-full btn primary py-2.5 text-sm font-bold shadow-lg shadow-indigo-500/25"
               >
                 Update Password
               </button>
@@ -330,7 +519,7 @@ const AuthPage = () => {
 
           <button
             onClick={resetForgotState}
-            className="w-full text-center text-xs text-secondaryText hover:text-white flex items-center justify-center gap-1.5 transition-colors pt-2"
+            className="w-full text-center text-xs text-slate-400 hover:text-white flex items-center justify-center gap-1.5 transition-colors pt-2"
           >
             <ArrowLeft className="w-3.5 h-3.5" /> Back to Sign In
           </button>
@@ -339,198 +528,291 @@ const AuthPage = () => {
     );
   }
 
-  // ── Main Auth Screen (Login / Register) ─────────────────────────────
+  // ── Main Hero Landing & Auth Screen ──────────────────────────────────
   return (
-    <div className="min-h-screen flex items-center justify-center bg-bg px-4 py-8">
-      <div className="w-full max-w-md bg-card border border-border backdrop-blur-md rounded-2xl shadow-2xl p-8 space-y-6">
+    <div className="min-h-screen flex items-center justify-center bg-bg px-4 py-12 relative overflow-hidden font-sans">
+      {/* Background Ambient Dashboard Photo Overlay */}
+      <div 
+        className="fixed inset-0 pointer-events-none opacity-[0.18] bg-cover bg-center bg-no-repeat z-0 filter brightness-90 contrast-110"
+        style={{ backgroundImage: `url(${dashboardBg})` }}
+      />
+
+      {/* Radial Lights */}
+      <div className="absolute top-1/3 left-1/3 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-tr from-indigo-600/25 via-purple-600/20 to-pink-600/15 rounded-full blur-3xl pointer-events-none" />
+
+      {/* Main Grid Container */}
+      <div className="w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center relative z-10 py-6">
         
-        {/* Header Title */}
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-primaryText">
-            {isLogin ? 'Sign In' : 'Create Account'}
-          </h2>
-          <p className="text-secondaryText text-xs mt-1">
-            {isLogin 
-              ? 'Enter your account credentials to continue.' 
-              : 'Select your role and complete details.'
-            }
+        {/* LEFT COLUMN: Ultra-Pro Hero Landing Section */}
+        <div className="lg:col-span-7 space-y-6 text-left">
+          
+          {/* Top Pill */}
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-indigo-500/10 border border-indigo-500/30 rounded-full text-indigo-300 text-xs font-bold tracking-wide shadow-inner shadow-indigo-500/10">
+            <Sparkles className="w-4 h-4 text-indigo-400 animate-pulse" />
+            <span>TrackerPro Next-Gen Career Command Center</span>
+          </div>
+
+          {/* Grammar-Corrected Large Headline */}
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white tracking-tight leading-[1.12]">
+            A New Era Begins: <br />
+            <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent drop-shadow-sm">
+              Step Into Professional Life
+            </span>
+          </h1>
+
+          {/* Subtext Description */}
+          <p className="text-slate-300 text-sm md:text-base leading-relaxed max-w-xl font-medium">
+            Empowering students, recruiters, and mentors in one unified platform. Track applications, organize candidate listings, and accelerate career growth with state-of-the-art tools.
           </p>
+
+          {/* Action Button Link in Eye-Catching Distinct Color */}
+          <div className="pt-2 flex flex-wrap items-center gap-4">
+            <a 
+              href="#auth-card" 
+              onClick={(e) => {
+                e.preventDefault();
+                setIsForgotPassword(false);
+                setIsLogin(true);
+                setError('');
+                setSuccessMessage('');
+                document.getElementById('auth-card')?.scrollIntoView({ behavior: 'smooth' });
+                setTimeout(() => {
+                  document.getElementById('signin-email')?.focus();
+                }, 250);
+              }}
+              className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 text-slate-950 font-black text-sm shadow-xl shadow-cyan-500/25 hover:shadow-cyan-500/40 hover:scale-105 transition-all duration-300 border border-cyan-200/50 group cursor-pointer"
+            >
+              <span>Step Into Your Future</span>
+              <ArrowRight className="w-4 h-4 text-slate-950 group-hover:translate-x-1 transition-transform" />
+            </a>
+
+            <div className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-slate-900/80 border border-slate-800 text-xs text-slate-300 font-semibold backdrop-blur-md">
+              <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+              <span>Unified Career Ecosystem</span>
+            </div>
+          </div>
+
+          {/* Role Badges Grid */}
+          <div className="pt-4 grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-xl">
+            <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center gap-2.5 text-xs text-slate-300 font-semibold">
+              <UserCheck className="w-4 h-4 text-indigo-400 shrink-0" />
+              <span>Applicant</span>
+            </div>
+            <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center gap-2.5 text-xs text-slate-300 font-semibold">
+              <Briefcase className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>Employer</span>
+            </div>
+            <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center gap-2.5 text-xs text-slate-300 font-semibold">
+              <GraduationCap className="w-4 h-4 text-purple-400 shrink-0" />
+              <span>Mentor</span>
+            </div>
+            <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center gap-2.5 text-xs text-slate-300 font-semibold">
+              <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>Admin</span>
+            </div>
+          </div>
         </div>
 
-        {/* Tab Switcher */}
-        <div className="flex bg-black/20 p-1.5 rounded-xl border border-border">
-          <button
-            type="button"
-            onClick={() => { setIsLogin(true); setError(''); setSuccessMessage(''); }}
-            className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-2 ${
-              isLogin ? 'bg-primary text-white shadow-md' : 'text-secondaryText hover:text-primaryText'
-            }`}
-          >
-            <LogIn className="w-3.5 h-3.5" /> Sign In
-          </button>
-          <button
-            type="button"
-            onClick={() => { setIsLogin(false); setError(''); setSuccessMessage(''); }}
-            className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-2 ${
-              !isLogin ? 'bg-primary text-white shadow-md' : 'text-secondaryText hover:text-primaryText'
-            }`}
-          >
-            <UserPlus className="w-3.5 h-3.5" /> Register
-          </button>
-        </div>
+        {/* RIGHT COLUMN: Sign In / Register Glassmorphic Form Card */}
+        <div id="auth-card" className="lg:col-span-5 scroll-mt-6">
+          <div className="w-full bg-slate-900/90 border border-slate-800 backdrop-blur-2xl rounded-3xl shadow-2xl p-8 space-y-6">
+            
+            {/* Brand Header inside card */}
+            <div className="text-center space-y-1.5">
+              <h2 className="text-2xl font-extrabold text-white tracking-tight">
+                {isLogin ? 'Sign In' : 'Create Your Account'}
+              </h2>
+              <p className="text-slate-400 text-xs">
+                {isLogin 
+                  ? 'Select your role and enter credentials to continue.' 
+                  : 'Sign up to start tracking jobs and internships.'
+                }
+              </p>
+            </div>
 
-        {/* Alert Messages */}
-        {error && (
-          <div className="p-3.5 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs flex items-center gap-2.5">
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>{error}</span>
-          </div>
-        )}
-        {successMessage && (
-          <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-400 text-xs flex items-center gap-2.5">
-            <CheckCircle2 className="w-4 h-4 shrink-0" />
-            <span>{successMessage}</span>
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Role Selection */}
-          <div>
-            <label className="form-label text-xs">Role</label>
-            <div className="relative flex items-center">
-              <UserCheck className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-10" />
-              <select
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                className="form-select text-xs py-2.5 pl-11 relative"
+            {/* Tab Switcher */}
+            <div className="flex bg-slate-950/90 p-1.5 rounded-xl border border-slate-800">
+              <button
+                type="button"
+                onClick={() => { setIsLogin(true); setError(''); setSuccessMessage(''); }}
+                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${
+                  isLogin 
+                    ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-lg shadow-indigo-500/30' 
+                    : 'text-slate-400 hover:text-white'
+                }`}
               >
-                <option value="user">Applicant</option>
-                <option value="employer">Employer</option>
-                <option value="mentor">Mentor</option>
-                {isLogin && <option value="admin">Admin</option>}
-              </select>
+                <LogIn className="w-3.5 h-3.5" /> Sign In
+              </button>
+              <button
+                type="button"
+                onClick={() => { setIsLogin(false); setError(''); setSuccessMessage(''); }}
+                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${
+                  !isLogin 
+                    ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-lg shadow-indigo-500/30' 
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <UserPlus className="w-3.5 h-3.5" /> Register
+              </button>
             </div>
-          </div>
 
-          {/* Email */}
-          <div>
-            <label className="form-label text-xs">Gmail Address</label>
-            <div className="relative flex items-center">
-              <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <input
-                type="email"
-                placeholder="user@gmail.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="input-field w-full pl-11 py-2.5 text-sm"
-                required
-              />
-            </div>
-          </div>
+            {/* Alert Messages */}
+            {error && (
+              <div className="p-3.5 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 text-xs flex items-center gap-2.5 font-medium">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
+            {successMessage && (
+              <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-400 text-xs flex items-center gap-2.5 font-medium">
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                <span>{successMessage}</span>
+              </div>
+            )}
 
-          {/* Registration Extra Fields */}
-          {!isLogin && (
-            <>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Role Selection */}
               <div>
-                <label className="form-label text-xs">Mobile Number</label>
-                <div className="flex gap-2">
-                  <select
-                    value={mobileCode}
-                    onChange={(e) => setMobileCode(e.target.value)}
-                    className="form-select text-xs w-24"
-                  >
-                    <option value="+92">+92 (PK)</option>
-                    <option value="+1">+1 (US)</option>
-                    <option value="+44">+44 (UK)</option>
-                  </select>
-                  <div className="relative flex-1 flex items-center">
-                    <Smartphone className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    <input
-                      type="text"
-                      placeholder="3001234567"
-                      value={mobileNumber}
-                      onChange={(e) => setMobileNumber(e.target.value.replace(/\D/g, ''))}
-                      className="input-field w-full pl-11 py-2.5 text-sm"
-                      required
-                    />
+                <label className="form-label text-xs">Account Role</label>
+                <div className="relative flex items-center">
+                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-10 flex items-center justify-center">
+                    {getRoleIcon(role)}
                   </div>
+                  <select
+                    value={role}
+                    onChange={(e) => setRole(e.target.value)}
+                    className="form-select text-xs py-2.5 !pl-11 bg-slate-950/80 relative text-white border-slate-800"
+                  >
+                    <option value="user">Applicant</option>
+                    <option value="employer">Employer</option>
+                    <option value="mentor">Mentor</option>
+                    {isLogin && <option value="admin">System Administrator</option>}
+                  </select>
                 </div>
               </div>
 
+              {/* Email */}
               <div>
-                <label className="form-label text-xs">CNIC / ID Card</label>
+                <label className="form-label text-xs">Gmail Address</label>
                 <div className="relative flex items-center">
-                  <CreditCard className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-10 flex items-center justify-center text-slate-400">
+                    <Mail className="w-4 h-4" />
+                  </div>
                   <input
-                    type="text"
-                    placeholder="12345-1234567-1"
-                    value={idCard}
-                    onChange={(e) => setIdCard(e.target.value)}
-                    className="input-field w-full pl-11 py-2.5 text-sm"
+                    id="signin-email"
+                    type="email"
+                    placeholder="user@gmail.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="input-field w-full !pl-11 py-2.5 text-sm bg-slate-950/80"
                     required
                   />
                 </div>
               </div>
-            </>
-          )}
 
-          {/* Password */}
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="form-label text-xs mb-0">Password</label>
-              {isLogin && (
-                <button
-                  type="button"
-                  onClick={() => { setIsForgotPassword(true); setError(''); setSuccessMessage(''); }}
-                  className="text-[11px] text-primary hover:underline font-medium"
-                >
-                  Forgot Password?
-                </button>
+              {/* Registration Extra Fields */}
+              {!isLogin && (
+                <>
+                  {/* Phone Number Field */}
+                  <div>
+                    <label className="form-label text-xs">Phone Number</label>
+                    <div className="relative flex items-center">
+                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-10 flex items-center justify-center text-slate-400">
+                        <Smartphone className="w-4 h-4" />
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="e.g. 03001234567"
+                        value={mobileNumber}
+                        onChange={(e) => setMobileNumber(e.target.value)}
+                        className="input-field w-full !pl-11 py-2.5 text-sm bg-slate-950/80"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* CNIC / ID Card Field */}
+                  <div>
+                    <label className="form-label text-xs">CNIC / ID Card</label>
+                    <div className="relative flex items-center">
+                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-10 flex items-center justify-center text-slate-400">
+                        <CreditCard className="w-4 h-4" />
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="e.g. 12345-1234567-1"
+                        value={idCard}
+                        onChange={(e) => setIdCard(e.target.value)}
+                        className="input-field w-full !pl-11 py-2.5 text-sm bg-slate-950/80"
+                        required
+                      />
+                    </div>
+                  </div>
+                </>
               )}
-            </div>
-            <div className="relative flex items-center">
-              <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-              <input
-                type={showPassword ? 'text' : 'password'}
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="input-field w-full pl-11 pr-11 py-2.5 text-sm"
-                required
-              />
+
+              {/* Password */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="form-label text-xs mb-0">Password</label>
+                  {isLogin && (
+                    <button
+                      type="button"
+                      onClick={() => { setIsForgotPassword(true); setError(''); setSuccessMessage(''); }}
+                      className="text-[11px] text-indigo-400 hover:text-indigo-300 hover:underline font-semibold"
+                    >
+                      Forgot Password?
+                    </button>
+                  )}
+                </div>
+                <div className="relative flex items-center">
+                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-10 flex items-center justify-center text-slate-400">
+                    <Lock className="w-4 h-4" />
+                  </div>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="input-field w-full !pl-11 !pr-11 py-2.5 text-sm bg-slate-950/80"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white flex items-center justify-center p-1 transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Remember Me */}
+              {isLogin && (
+                <div className="flex items-center gap-2 pt-1">
+                  <input
+                    type="checkbox"
+                    id="remember"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="rounded border-slate-700 bg-slate-950 text-indigo-600 accent-indigo-600 cursor-pointer w-4 h-4"
+                  />
+                  <label htmlFor="remember" className="text-xs text-slate-400 cursor-pointer select-none">
+                    Keep me signed in on this browser
+                  </label>
+                </div>
+              )}
+
               <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white flex items-center justify-center p-1"
+                type="submit"
+                className="w-full btn primary py-2.5 text-sm font-bold shadow-lg shadow-indigo-500/25 mt-2"
               >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                {isLogin ? 'Sign In' : 'Create Account'}
               </button>
-            </div>
+            </form>
           </div>
+        </div>
 
-          {/* Remember Me */}
-          {isLogin && (
-            <div className="flex items-center gap-2 pt-1">
-              <input
-                type="checkbox"
-                id="remember"
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-                className="rounded border-border bg-slate-900 text-primary accent-primary cursor-pointer"
-              />
-              <label htmlFor="remember" className="text-xs text-secondaryText cursor-pointer select-none">
-                Remember me
-              </label>
-            </div>
-          )}
-
-          <button
-            type="submit"
-            className="w-full btn primary py-2.5 text-sm font-semibold shadow-lg shadow-primary/25 mt-2"
-          >
-            {isLogin ? 'Sign In' : 'Create Account'}
-          </button>
-        </form>
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 import React, { useContext, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { AppContext } from '../context/AppContext';
+import dashboardBg from '../../../Untitled design.png';
 import { 
   Briefcase, 
   Clock, 
@@ -12,7 +13,11 @@ import {
   Calendar, 
   Send, 
   TrendingUp, 
-  ArrowRight
+  ArrowRight,
+  Sparkles,
+  Award,
+  ChevronRight,
+  ExternalLink
 } from 'lucide-react';
 
 const DashboardOverview = () => {
@@ -43,40 +48,54 @@ const DashboardOverview = () => {
   const hiredCount = myApplications.filter(a => a.status === 'Hired' || a.status === 'Shortlisted').length + 
                      myPersonalApps.filter(a => a.status === 'Hired' || a.status === 'Shortlisted').length;
 
+  const successRate = totalAppsCount > 0 ? Math.round(((interviewCount + hiredCount) / totalAppsCount) * 100) : 0;
+
   const StatusIcon = ({ status }) => {
     switch (status) {
       case 'Applied':
-      case 'Pending': return <Clock className="w-4 h-4 text-amber-400" />;
-      case 'Shortlisted': return <CheckCircle2 className="w-4 h-4 text-blue-400" />;
-      case 'Interview': return <Video className="w-4 h-4 text-purple-400" />;
-      case 'Hired': return <CheckCircle2 className="w-4 h-4 text-emerald-400" />;
-      case 'Rejected': return <XCircle className="w-4 h-4 text-rose-400" />;
-      default: return <Clock className="w-4 h-4 text-gray-400" />;
+      case 'Pending': return <Clock className="w-3.5 h-3.5 text-amber-400" />;
+      case 'Shortlisted': return <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400" />;
+      case 'Interview': return <Video className="w-3.5 h-3.5 text-purple-400" />;
+      case 'Hired': return <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />;
+      case 'Rejected': return <XCircle className="w-3.5 h-3.5 text-rose-400" />;
+      default: return <Clock className="w-3.5 h-3.5 text-slate-400" />;
     }
   };
 
   return (
-    <div className="panel-container space-y-8">
-      {/* Welcome Banner */}
-      <div className="card bg-gradient-to-r from-slate-900 via-slate-800 to-indigo-950/80 border-primary/20 p-6 relative overflow-hidden">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
-          <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary/20 text-primary border border-primary/30 rounded-full text-xs font-semibold mb-3">
-              <TrendingUp className="w-3.5 h-3.5" /> Student Applicant Workspace
+    <div className="panel-container space-y-8 font-sans">
+      {/* Welcome Banner with Photo Background */}
+      <div 
+        className="relative rounded-2xl p-8 overflow-hidden bg-cover bg-center border border-indigo-500/30 shadow-2xl"
+        style={{ backgroundImage: `linear-gradient(to right, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.75)), url(${dashboardBg})` }}
+      >
+        <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+        
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-500/10 text-indigo-300 border border-indigo-500/30 rounded-full text-xs font-semibold">
+              <Sparkles className="w-3.5 h-3.5 text-indigo-400" /> Student Applicant Workspace
             </div>
-            <h2 className="text-2xl md:text-3xl font-bold text-white mb-1">
-              Welcome back, {currentUser?.name || 'Student'}! 👋
+            <h2 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
+              Welcome back, {currentUser?.name || 'Applicant'}! 👋
             </h2>
-            <p className="text-secondaryText text-sm max-w-xl">
-              Track your job and internship applications, submit new details, and monitor interview progress.
+            <p className="text-slate-300 text-sm max-w-xl leading-relaxed">
+              Track your active job & internship submissions, monitor recruiter interviews, and accelerate your career journey.
             </p>
           </div>
-          <div className="flex items-center gap-3">
+
+          <div className="flex flex-wrap items-center gap-3">
             <Link
               to="/apply"
-              className="btn primary py-2.5 px-5 font-semibold text-sm shadow-lg shadow-primary/30 hover:scale-[1.02] transition-transform"
+              className="btn primary py-3 px-5 font-bold text-sm shadow-xl shadow-indigo-500/30 hover:scale-[1.02] transition-transform flex items-center gap-2"
             >
               <PlusCircle className="w-4 h-4" /> Log Application Form
+            </Link>
+            <Link
+              to="/applications"
+              className="btn secondary py-3 px-4 font-semibold text-sm flex items-center gap-2"
+            >
+              <FileText className="w-4 h-4 text-slate-400" /> Pipeline
             </Link>
           </div>
         </div>
@@ -86,90 +105,118 @@ const DashboardOverview = () => {
       <div className="stats-grid">
         <div className="stat-card">
           <div className="flex items-center justify-between">
-            <h4>Total Applications</h4>
-            <Briefcase className="w-5 h-5 text-primary opacity-80" />
+            <h4>Total Tracked</h4>
+            <Briefcase className="w-5 h-5 text-indigo-400 opacity-80" />
           </div>
           <h2>{totalAppsCount}</h2>
-          <p className="text-xs text-secondaryText mt-1">Platform + Personal Tracked</p>
+          <div className="mt-2 flex items-center justify-between text-xs text-slate-400">
+            <span>Platform + Personal</span>
+            <span className="text-indigo-400 font-semibold">{totalAppsCount} total</span>
+          </div>
+          <div className="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
+            <div className="bg-indigo-500 h-full rounded-full" style={{ width: '100%' }} />
+          </div>
         </div>
 
         <div className="stat-card">
           <div className="flex items-center justify-between">
-            <h4>In Review / Pending</h4>
+            <h4>In Review</h4>
             <Clock className="w-5 h-5 text-amber-400 opacity-80" />
           </div>
           <h2>{inReviewCount}</h2>
-          <p className="text-xs text-secondaryText mt-1">Awaiting responses</p>
+          <div className="mt-2 flex items-center justify-between text-xs text-slate-400">
+            <span>Awaiting Review</span>
+            <span className="text-amber-400 font-semibold">{inReviewCount} active</span>
+          </div>
+          <div className="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
+            <div className="bg-amber-400 h-full rounded-full" style={{ width: `${totalAppsCount > 0 ? (inReviewCount/totalAppsCount)*100 : 0}%` }} />
+          </div>
         </div>
 
         <div className="stat-card">
           <div className="flex items-center justify-between">
-            <h4>Interviews Scheduled</h4>
+            <h4>Interviews</h4>
             <Video className="w-5 h-5 text-purple-400 opacity-80" />
           </div>
           <h2>{interviewCount}</h2>
-          <p className="text-xs text-secondaryText mt-1">Active interview stages</p>
+          <div className="mt-2 flex items-center justify-between text-xs text-slate-400">
+            <span>Scheduled Meetings</span>
+            <span className="text-purple-400 font-semibold">{interviewCount} live</span>
+          </div>
+          <div className="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
+            <div className="bg-purple-400 h-full rounded-full" style={{ width: `${totalAppsCount > 0 ? (interviewCount/totalAppsCount)*100 : 0}%` }} />
+          </div>
         </div>
 
         <div className="stat-card">
           <div className="flex items-center justify-between">
-            <h4>Shortlisted / Offers</h4>
-            <CheckCircle2 className="w-5 h-5 text-emerald-400 opacity-80" />
+            <h4>Offers & Shortlists</h4>
+            <Award className="w-5 h-5 text-emerald-400 opacity-80" />
           </div>
           <h2>{hiredCount}</h2>
-          <p className="text-xs text-secondaryText mt-1">Successful milestones</p>
+          <div className="mt-2 flex items-center justify-between text-xs text-slate-400">
+            <span>Success Rate</span>
+            <span className="text-emerald-400 font-semibold">{successRate}%</span>
+          </div>
+          <div className="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
+            <div className="bg-emerald-400 h-full rounded-full" style={{ width: `${successRate}%` }} />
+          </div>
         </div>
       </div>
 
-      {/* Two Column Section */}
+      {/* Main Grid Section */}
       <div className="grid-2">
-        {/* Left Column: Platform Open Jobs */}
-        <div className="card flex flex-col justify-between">
+        {/* Left Column: Open Platform Opportunities */}
+        <div className="card flex flex-col justify-between border-slate-800">
           <div>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="flex items-center gap-2">
-                <Briefcase className="w-5 h-5 text-primary" /> Open Opportunities ({jobs.length})
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="flex items-center gap-2 text-white">
+                <Briefcase className="w-5 h-5 text-indigo-400" /> Platform Listings ({jobs.length})
               </h3>
-              <Link to="/apply" className="text-xs text-primary hover:underline flex items-center gap-1 font-medium">
-                Custom Form <ArrowRight className="w-3 h-3" />
+              <Link to="/apply" className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold flex items-center gap-1">
+                Custom Form <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>
 
-            <div className="list max-h-[380px] overflow-y-auto pr-1 space-y-3">
+            <div className="list max-h-[420px] overflow-y-auto pr-1 space-y-3">
               {jobs.length === 0 ? (
-                <p className="text-secondaryText text-sm py-4 text-center">No platform listings available.</p>
+                <p className="text-slate-400 text-sm py-6 text-center">No platform listings available.</p>
               ) : (
                 jobs.map(job => {
                   const hasApplied = myApplications.some(app => app.jobId === job.id);
                   return (
-                    <div key={job.id} className="list-item flex-col items-start gap-3 p-4 bg-slate-800/40 hover:bg-slate-800/70 border border-border/50 rounded-xl transition-all">
-                      <div className="w-full flex justify-between items-start">
+                    <div 
+                      key={job.id} 
+                      className="p-4 bg-slate-900/60 hover:bg-slate-900/90 border border-slate-800 hover:border-slate-700 rounded-xl transition-all space-y-3"
+                    >
+                      <div className="flex justify-between items-start gap-3">
                         <div>
-                          <h4 className="font-semibold text-base flex items-center gap-2 text-white">
+                          <h4 className="font-bold text-sm text-white flex items-center gap-2">
                             {job.title}
-                            <span className="text-[11px] bg-primary/20 text-primary px-2 py-0.5 rounded-full font-medium border border-primary/30">
+                            <span className="text-[10px] bg-indigo-500/10 text-indigo-400 px-2.5 py-0.5 rounded-full font-bold border border-indigo-500/20">
                               {job.type}
                             </span>
                           </h4>
-                          <p className="text-secondaryText text-xs font-medium mt-0.5">{job.company}</p>
+                          <p className="text-slate-400 text-xs font-medium mt-0.5">{job.company}</p>
                         </div>
                         <button
                           onClick={() => navigate(`/apply?jobId=${job.id}`)}
-                          className={`btn py-1.5 px-3.5 text-xs font-medium ${
-                            hasApplied ? 'secondary opacity-70' : 'primary shadow-sm'
+                          className={`btn py-1.5 px-3.5 text-xs font-semibold ${
+                            hasApplied ? 'secondary opacity-70 cursor-default' : 'primary shadow-md'
                           }`}
+                          disabled={hasApplied}
                         >
                           <Send className="w-3.5 h-3.5" />
                           {hasApplied ? 'Applied' : 'Apply Now'}
                         </button>
                       </div>
 
-                      <div className="w-full bg-slate-900/60 rounded-lg p-2.5 border border-border/40 text-xs text-secondaryText flex items-center justify-between">
+                      <div className="bg-slate-950/80 rounded-lg p-2.5 border border-slate-800/80 text-xs text-slate-400 flex items-center justify-between">
                         <div className="flex items-center gap-1.5">
-                          <Calendar className="w-3.5 h-3.5 text-primary" />
+                          <Calendar className="w-3.5 h-3.5 text-indigo-400" />
                           <span>Deadline: {job.deadline || 'N/A'}</span>
                         </div>
-                        <span className="text-emerald-400 font-medium">{job.status || 'Active'}</span>
+                        <span className="text-emerald-400 font-semibold text-[11px]">{job.status || 'Active'}</span>
                       </div>
                     </div>
                   );
@@ -179,26 +226,28 @@ const DashboardOverview = () => {
           </div>
         </div>
 
-        {/* Right Column: Tracked Applications Summary */}
-        <div className="card">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="flex items-center gap-2">
-              <FileText className="w-5 h-5 text-secondary" /> Recent Application Activity
+        {/* Right Column: Tracked Activity Feed */}
+        <div className="card border-slate-800">
+          <div className="flex items-center justify-between mb-5">
+            <h3 className="flex items-center gap-2 text-white">
+              <FileText className="w-5 h-5 text-purple-400" /> Application Pipeline
             </h3>
-            <Link to="/applications" className="text-xs text-secondary hover:underline flex items-center gap-1 font-medium">
-              View All ({totalAppsCount}) <ArrowRight className="w-3 h-3" />
+            <Link to="/applications" className="text-xs text-purple-400 hover:text-purple-300 font-semibold flex items-center gap-1">
+              View Tracker ({totalAppsCount}) <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
-          <div className="list max-h-[380px] overflow-y-auto pr-1 space-y-3">
+          <div className="list max-h-[420px] overflow-y-auto pr-1 space-y-3">
             {myApplications.length === 0 && myPersonalApps.length === 0 ? (
-              <div className="text-center py-8 text-secondaryText">
-                <FileText className="w-8 h-8 mx-auto mb-2 opacity-40 text-secondaryText" />
-                <p className="text-sm font-medium">No applications logged yet.</p>
-                <p className="text-xs text-secondaryText mt-1">Use the Application Form to start tracking!</p>
+              <div className="text-center py-12 text-slate-400 space-y-3">
+                <FileText className="w-10 h-10 mx-auto opacity-30 text-indigo-400" />
+                <div>
+                  <p className="text-sm font-bold text-white">No applications tracked yet</p>
+                  <p className="text-xs text-slate-400 mt-1">Start by filling out your first job application form!</p>
+                </div>
                 <button
                   onClick={() => navigate('/apply')}
-                  className="btn primary py-1.5 px-4 text-xs mt-3"
+                  className="btn primary py-2 px-4 text-xs font-bold shadow-lg shadow-indigo-500/20"
                 >
                   <PlusCircle className="w-4 h-4" /> Open Application Form
                 </button>
@@ -208,13 +257,13 @@ const DashboardOverview = () => {
                 {myApplications.map(app => {
                   const job = jobs.find(j => j.id === app.jobId);
                   return (
-                    <div key={`plat-${app.id}`} className="list-item items-center justify-between p-3.5 bg-slate-800/40 rounded-xl border border-border/40">
-                      <div>
-                        <h4 className="font-semibold text-sm text-white">{job?.title || 'Platform Position'}</h4>
-                        <p className="text-xs text-secondaryText">{job?.company || 'Company Listing'}</p>
+                    <div key={`plat-${app.id}`} className="flex items-center justify-between p-3.5 bg-slate-900/60 rounded-xl border border-slate-800 hover:border-slate-700 transition-colors">
+                      <div className="space-y-0.5">
+                        <h4 className="font-bold text-sm text-white">{job?.title || 'Platform Position'}</h4>
+                        <p className="text-xs text-slate-400 font-medium">{job?.company || 'Company Listing'}</p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-800 text-primaryText border border-border flex items-center gap-1.5">
+                        <span className="status uppercase text-[10px]">
                           <StatusIcon status={app.status} /> {app.status}
                         </span>
                       </div>
@@ -223,13 +272,13 @@ const DashboardOverview = () => {
                 })}
 
                 {myPersonalApps.map(app => (
-                  <div key={`pers-${app.id}`} className="list-item items-center justify-between p-3.5 bg-slate-800/40 rounded-xl border border-border/40">
-                    <div>
-                      <h4 className="font-semibold text-sm text-white">{app.title}</h4>
-                      <p className="text-xs text-secondaryText">{app.company} • Personal Tracked</p>
+                  <div key={`pers-${app.id}`} className="flex items-center justify-between p-3.5 bg-slate-900/60 rounded-xl border border-slate-800 hover:border-slate-700 transition-colors">
+                    <div className="space-y-0.5">
+                      <h4 className="font-bold text-sm text-white">{app.title}</h4>
+                      <p className="text-xs text-slate-400 font-medium">{app.company} • External</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-800 text-primaryText border border-border flex items-center gap-1.5">
+                      <span className="status uppercase text-[10px]">
                         <StatusIcon status={app.status} /> {app.status}
                       </span>
                     </div>

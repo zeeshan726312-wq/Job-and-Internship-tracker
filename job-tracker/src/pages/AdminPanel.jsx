@@ -1,5 +1,6 @@
 import React, { useContext, useState } from 'react';
 import { AppContext } from '../context/AppContext';
+import dashboardBg from '../../../Untitled design.png';
 import { 
   Trash2, 
   UserPlus, 
@@ -14,7 +15,11 @@ import {
   XCircle,
   Clock,
   Video,
-  Edit2
+  Edit2,
+  Plus,
+  AlertCircle,
+  Search,
+  Sparkles
 } from 'lucide-react';
 
 const AdminPanel = () => {
@@ -31,8 +36,9 @@ const AdminPanel = () => {
     personalApps
   } = useContext(AppContext);
   
-  const [activeTab, setActiveTab] = useState('overview'); // overview, users, jobs, applications, settings
+  const [activeTab, setActiveTab] = useState('overview'); // overview, users, jobs, applications
   const [showAddUserModal, setShowAddUserModal] = useState(false);
+  const [userSearch, setUserSearch] = useState('');
   
   // Add User Form State
   const [newUser, setNewUser] = useState({
@@ -88,351 +94,240 @@ const AdminPanel = () => {
     }
   };
 
+  const filteredUsers = usersDb.filter(u => 
+    u.name.toLowerCase().includes(userSearch.toLowerCase()) || 
+    u.email.toLowerCase().includes(userSearch.toLowerCase())
+  );
+
   return (
-    <div className="panel-container space-y-6">
-      {/* Header Banner */}
-      <div className="card bg-gradient-to-r from-slate-900 via-slate-800 to-emerald-950/70 border-emerald-500/20 p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full text-xs font-semibold mb-2">
-            <ShieldCheck className="w-3.5 h-3.5" /> System Manager Console
+    <div className="panel-container space-y-8 font-sans">
+      {/* Header Banner with Photo Background */}
+      <div 
+        className="relative rounded-2xl p-8 overflow-hidden bg-cover bg-center border border-emerald-500/30 shadow-2xl"
+        style={{ backgroundImage: `linear-gradient(to right, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.75)), url(${dashboardBg})` }}
+      >
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
+          <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded-full text-xs font-semibold mb-2">
+              <ShieldCheck className="w-3.5 h-3.5" /> System Manager Console
+            </div>
+            <h2 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
+              Administrator Control Panel
+            </h2>
+            <p className="text-slate-400 text-xs mt-1">
+              Manage platform system users, monitor job listings, and control applicant submissions.
+            </p>
           </div>
-          <h2 className="text-2xl font-bold text-white">Administrator Control Panel</h2>
-          <p className="text-sm text-secondaryText">
-            Full system authority to manage users, control job & internship listings, track applications, and generate analytics.
-          </p>
+
+          <button
+            onClick={() => setShowAddUserModal(true)}
+            className="btn primary py-2.5 px-4 text-xs font-bold shadow-lg shadow-indigo-500/20 flex items-center gap-2"
+          >
+            <UserPlus className="w-4 h-4" /> Provision New User
+          </button>
         </div>
+      </div>
+
+      {/* Navigation Pills */}
+      <div className="flex bg-slate-900 border border-slate-800 p-1.5 rounded-2xl max-w-xl">
         <button
-          onClick={() => setShowAddUserModal(true)}
-          className="btn primary py-2.5 px-4 font-semibold text-xs shadow-lg shadow-emerald-500/20 flex items-center gap-2"
+          onClick={() => setActiveTab('overview')}
+          className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${
+            activeTab === 'overview' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+          }`}
         >
-          <UserPlus className="w-4 h-4" /> Create New User Account
+          Overview Stats
+        </button>
+        <button
+          onClick={() => setActiveTab('users')}
+          className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${
+            activeTab === 'users' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          User Accounts ({usersDb.length})
+        </button>
+        <button
+          onClick={() => setActiveTab('jobs')}
+          className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${
+            activeTab === 'jobs' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          Platform Jobs ({jobs.length})
+        </button>
+        <button
+          onClick={() => setActiveTab('applications')}
+          className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all ${
+            activeTab === 'applications' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          Applications ({applications.length})
         </button>
       </div>
 
-      {/* Metric Cards */}
-      <div className="stats-grid">
-        <div className="stat-card">
-          <div className="flex items-center justify-between">
-            <h4>Total Registered Users</h4>
-            <Users className="w-5 h-5 text-primary opacity-80" />
-          </div>
-          <h2>{usersDb.length}</h2>
-          <p className="text-xs text-secondaryText mt-1">
-            {applicants.length} Applicants • {employers.length} Employers • {mentors.length} Mentors
-          </p>
-        </div>
-
-        <div className="stat-card">
-          <div className="flex items-center justify-between">
-            <h4>Active Job / Internship Listings</h4>
-            <Briefcase className="w-5 h-5 text-amber-400 opacity-80" />
-          </div>
-          <h2>{jobs.length}</h2>
-          <p className="text-xs text-secondaryText mt-1">Platform opportunities</p>
-        </div>
-
-        <div className="stat-card">
-          <div className="flex items-center justify-between">
-            <h4>Platform Applications</h4>
-            <FileText className="w-5 h-5 text-purple-400 opacity-80" />
-          </div>
-          <h2>{applications.length + personalApps.length}</h2>
-          <p className="text-xs text-secondaryText mt-1">{applications.length} Platform + {personalApps.length} Personal</p>
-        </div>
-
-        <div className="stat-card">
-          <div className="flex items-center justify-between">
-            <h4>Hired / Placed Students</h4>
-            <CheckCircle2 className="w-5 h-5 text-emerald-400 opacity-80" />
-          </div>
-          <h2>{hiredCount}</h2>
-          <p className="text-xs text-secondaryText mt-1">{interviewCount} in active interview stage</p>
-        </div>
-      </div>
-
-      {/* Tabs Bar */}
-      <div className="flex gap-2 border-b border-border pb-2 overflow-x-auto">
-        {[
-          { key: 'overview', label: 'System Overview & Analytics', icon: BarChart3 },
-          { key: 'users', label: `Manage Users (${usersDb.length})`, icon: Users },
-          { key: 'jobs', label: `Job Listings (${jobs.length})`, icon: Briefcase },
-          { key: 'applications', label: `All Applications (${applications.length})`, icon: FileText },
-          { key: 'settings', label: 'System Settings', icon: Settings }
-        ].map(tab => {
-          const Icon = tab.icon;
-          return (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`px-4 py-2.5 rounded-xl font-semibold text-xs transition-all flex items-center gap-2 whitespace-nowrap ${
-                activeTab === tab.key 
-                  ? 'bg-primary text-white shadow-md' 
-                  : 'text-secondaryText hover:text-white hover:bg-slate-800'
-              }`}
-            >
-              <Icon className="w-4 h-4" /> {tab.label}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Add User Modal */}
-      {showAddUserModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-border rounded-2xl p-6 max-w-md w-full space-y-4 shadow-2xl">
-            <h3 className="text-lg font-bold text-white flex items-center gap-2">
-              <UserPlus className="w-5 h-5 text-emerald-400" /> Create Account for System User
-            </h3>
-
-            {formError && (
-              <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs">
-                {formError}
-              </div>
-            )}
-            {formSuccess && (
-              <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-400 text-xs">
-                {formSuccess}
-              </div>
-            )}
-
-            <form onSubmit={handleAddUser} className="space-y-3">
-              <div>
-                <label className="form-label text-xs">Role</label>
-                <select
-                  value={newUser.role}
-                  onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
-                  className="form-select text-xs"
-                >
-                  <option value="user">🧑 Applicant / Student</option>
-                  <option value="employer">🏢 Employer (Opportunity Provider)</option>
-                  <option value="mentor">🎓 Mentor (Guide / Support)</option>
-                  <option value="admin">👨💼 Admin (System Manager)</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="form-label text-xs">Full Name</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Sarah Connor"
-                  value={newUser.name}
-                  onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
-                  className="input-field text-xs w-full"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="form-label text-xs">Gmail Address</label>
-                <input
-                  type="email"
-                  placeholder="sarah@gmail.com"
-                  value={newUser.email}
-                  onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                  className="input-field text-xs w-full"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="form-label text-xs">Password</label>
-                <input
-                  type="password"
-                  placeholder="••••••••"
-                  value={newUser.password}
-                  onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                  className="input-field text-xs w-full"
-                  required
-                />
-              </div>
-
-              <div className="flex gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowAddUserModal(false)}
-                  className="btn secondary text-xs flex-1"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="btn primary text-xs font-semibold flex-1"
-                >
-                  Create User
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Tab Contents */}
-      {/* 1. OVERVIEW & ANALYTICS */}
+      {/* OVERVIEW TAB */}
       {activeTab === 'overview' && (
-        <div className="grid-2">
-          <div className="card space-y-4">
-            <h3 className="flex items-center gap-2">
-              <Users className="w-5 h-5 text-primary" /> User Distribution Breakdown
-            </h3>
-            <div className="space-y-3">
-              <div className="p-3 bg-slate-800/60 rounded-xl border border-border flex justify-between items-center text-xs">
-                <span className="font-semibold text-white">🧑 Student Applicants</span>
-                <span className="px-2.5 py-1 rounded-full bg-blue-500/20 text-blue-300 font-bold">{applicants.length}</span>
+        <div className="space-y-6">
+          <div className="stats-grid">
+            <div className="stat-card">
+              <div className="flex justify-between items-center">
+                <h4>Registered Users</h4>
+                <Users className="w-5 h-5 text-indigo-400 opacity-80" />
               </div>
-              <div className="p-3 bg-slate-800/60 rounded-xl border border-border flex justify-between items-center text-xs">
-                <span className="font-semibold text-white">🏢 Employers / Recruiters</span>
-                <span className="px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 font-bold">{employers.length}</span>
-              </div>
-              <div className="p-3 bg-slate-800/60 rounded-xl border border-border flex justify-between items-center text-xs">
-                <span className="font-semibold text-white">🎓 Mentors & Advisors</span>
-                <span className="px-2.5 py-1 rounded-full bg-purple-500/20 text-purple-300 font-bold">{mentors.length}</span>
-              </div>
+              <h2>{usersDb.length}</h2>
+              <p className="text-xs text-slate-400 mt-1">{applicants.length} Applicants • {employers.length} Recruiters</p>
             </div>
-          </div>
 
-          <div className="card space-y-4">
-            <h3 className="flex items-center gap-2">
-              <BarChart3 className="w-5 h-5 text-emerald-400" /> Application Pipeline Report
-            </h3>
-            <div className="space-y-3">
-              <div className="p-3 bg-slate-800/60 rounded-xl border border-border flex justify-between items-center text-xs">
-                <span className="font-semibold text-amber-300 flex items-center gap-1">
-                  <Clock className="w-4 h-4" /> Applied / Pending Review
-                </span>
-                <span className="font-bold text-white">
-                  {applications.filter(a => a.status === 'Applied' || a.status === 'Pending').length}
-                </span>
+            <div className="stat-card">
+              <div className="flex justify-between items-center">
+                <h4>Active Jobs</h4>
+                <Briefcase className="w-5 h-5 text-amber-400 opacity-80" />
               </div>
-              <div className="p-3 bg-slate-800/60 rounded-xl border border-border flex justify-between items-center text-xs">
-                <span className="font-semibold text-purple-300 flex items-center gap-1">
-                  <Video className="w-4 h-4" /> Active Interview Stage
-                </span>
-                <span className="font-bold text-white">{interviewCount}</span>
+              <h2>{jobs.length}</h2>
+              <p className="text-xs text-slate-400 mt-1">Platform Positions</p>
+            </div>
+
+            <div className="stat-card">
+              <div className="flex justify-between items-center">
+                <h4>Tracked Submissions</h4>
+                <FileText className="w-5 h-5 text-purple-400 opacity-80" />
               </div>
-              <div className="p-3 bg-slate-800/60 rounded-xl border border-border flex justify-between items-center text-xs">
-                <span className="font-semibold text-emerald-300 flex items-center gap-1">
-                  <CheckCircle2 className="w-4 h-4" /> Offers / Hired
-                </span>
-                <span className="font-bold text-white">{hiredCount}</span>
+              <h2>{applications.length + personalApps.length}</h2>
+              <p className="text-xs text-slate-400 mt-1">Total System Pipeline</p>
+            </div>
+
+            <div className="stat-card">
+              <div className="flex justify-between items-center">
+                <h4>Hired Placements</h4>
+                <CheckCircle2 className="w-5 h-5 text-emerald-400 opacity-80" />
               </div>
+              <h2>{hiredCount}</h2>
+              <p className="text-xs text-slate-400 mt-1">{interviewCount} in interview stages</p>
             </div>
           </div>
         </div>
       )}
 
-      {/* 2. MANAGE USERS */}
+      {/* USERS TAB */}
       {activeTab === 'users' && (
-        <div className="card space-y-4">
-          <div className="flex items-center justify-between">
-            <h3>Registered System Users</h3>
-            <button
-              onClick={() => setShowAddUserModal(true)}
-              className="btn primary py-1.5 px-3 text-xs"
-            >
-              <UserPlus className="w-3.5 h-3.5" /> Add Account
-            </button>
+        <div className="card bg-slate-900/80 border border-slate-800 rounded-2xl p-6 space-y-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <h3 className="text-white font-bold text-base flex items-center gap-2">
+              <Users className="w-5 h-5 text-indigo-400" /> Platform User Accounts Directory
+            </h3>
+            
+            <div className="relative w-full md:w-64">
+              <input
+                type="text"
+                placeholder="Search user name or email..."
+                value={userSearch}
+                onChange={(e) => setUserSearch(e.target.value)}
+                className="input-field w-full text-xs bg-slate-950/80 border-slate-800"
+              />
+            </div>
           </div>
 
-          <div className="list space-y-3">
-            {usersDb.map(u => (
-              <div key={u.email} className="list-item items-center justify-between p-4 bg-slate-800/40 rounded-xl border border-border">
-                <div className="space-y-1">
-                  <h4 className="font-bold text-white text-sm flex items-center gap-2">
-                    {u.name}
-                    <span className={`text-[10px] px-2 py-0.5 rounded font-semibold capitalize ${
-                      u.role === 'admin' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' :
-                      u.role === 'employer' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' :
-                      u.role === 'mentor' ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' :
-                      'bg-blue-500/20 text-blue-300 border border-blue-500/30'
-                    }`}>
-                      {u.role}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="border-b border-slate-800 text-slate-400 font-semibold uppercase text-[10px]">
+                  <th className="p-3">User Name</th>
+                  <th className="p-3">Gmail Address</th>
+                  <th className="p-3">Assigned Role</th>
+                  <th className="p-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/60">
+                {filteredUsers.map(u => (
+                  <tr key={u.id} className="hover:bg-slate-950/60 transition-colors">
+                    <td className="p-3 font-bold text-white">{u.name}</td>
+                    <td className="p-3 text-slate-300 font-medium">{u.email}</td>
+                    <td className="p-3">
+                      <select
+                        value={u.role}
+                        onChange={(e) => updateUserRole(u.id, e.target.value)}
+                        className="bg-slate-950 border border-slate-800 text-[11px] font-bold text-white py-1 px-2.5 rounded-lg outline-none cursor-pointer"
+                      >
+                        <option value="user">Applicant</option>
+                        <option value="employer">Employer</option>
+                        <option value="mentor">Mentor</option>
+                        <option value="admin">System Administrator</option>
+                      </select>
+                    </td>
+                    <td className="p-3 text-right">
+                      <button
+                        onClick={() => deleteUser(u.id)}
+                        className="p-1.5 text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors border border-rose-500/20"
+                        title="Delete User"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* JOBS TAB */}
+      {activeTab === 'jobs' && (
+        <div className="card bg-slate-900/80 border border-slate-800 rounded-2xl p-6 space-y-4">
+          <h3 className="text-white font-bold text-base flex items-center gap-2">
+            <Briefcase className="w-5 h-5 text-amber-400" /> Platform Active Jobs
+          </h3>
+
+          <div className="space-y-3">
+            {jobs.map(j => (
+              <div key={j.id} className="p-4 bg-slate-950/80 border border-slate-800 rounded-xl flex items-center justify-between">
+                <div>
+                  <h4 className="font-bold text-sm text-white flex items-center gap-2">
+                    {j.title}
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-bold">
+                      {j.type}
                     </span>
                   </h4>
-                  <p className="text-xs text-secondaryText">{u.email} • Mobile: {u.mobile || 'N/A'}</p>
+                  <p className="text-xs text-slate-400 mt-1">Company: {j.company} • Deadline: {j.deadline || 'N/A'}</p>
                 </div>
-
-                <div className="flex items-center gap-2">
-                  <select
-                    value={u.role}
-                    onChange={(e) => updateUserRole(u.email, e.target.value)}
-                    className="form-select text-xs py-1 px-2"
-                  >
-                    <option value="user">User/Applicant</option>
-                    <option value="employer">Employer</option>
-                    <option value="mentor">Mentor</option>
-                    <option value="admin">Admin</option>
-                  </select>
-
-                  {u.email !== 'admin@gmail.com' && (
-                    <button
-                      onClick={() => deleteUser(u.email)}
-                      className="p-2 text-rose-400 hover:bg-rose-500/20 rounded-lg transition-colors"
-                      title="Delete User Account"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
+                <button
+                  onClick={() => deleteJob(j.id)}
+                  className="p-2 text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors border border-rose-500/20"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* 3. MANAGE JOBS */}
-      {activeTab === 'jobs' && (
-        <div className="card space-y-4">
-          <h3>Platform Job & Internship Listings</h3>
-          <div className="list space-y-3">
-            {jobs.length === 0 ? (
-              <p className="text-xs text-secondaryText">No listings currently published.</p>
-            ) : (
-              jobs.map(job => (
-                <div key={job.id} className="list-item items-center justify-between p-4 bg-slate-800/40 rounded-xl border border-border">
-                  <div>
-                    <h4 className="font-bold text-white text-sm flex items-center gap-2">
-                      {job.title}
-                      <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded border border-primary/30">
-                        {job.type}
-                      </span>
-                    </h4>
-                    <p className="text-xs text-secondaryText">{job.company} • Deadline: {job.deadline || 'None'}</p>
-                  </div>
-                  <button
-                    onClick={() => deleteJob(job.id)}
-                    className="p-2 text-rose-400 hover:bg-rose-500/20 rounded-lg transition-colors"
-                    title="Remove Job Posting"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* 4. ALL APPLICATIONS */}
+      {/* APPLICATIONS TAB */}
       {activeTab === 'applications' && (
-        <div className="card space-y-4">
-          <h3>System Applications Oversight</h3>
-          <div className="list space-y-3">
-            {applications.length === 0 ? (
-              <p className="text-xs text-secondaryText">No applications submitted yet.</p>
-            ) : (
-              applications.map(app => {
-                const job = jobs.find(j => j.id === app.jobId);
-                return (
-                  <div key={app.id} className="list-item items-center justify-between p-4 bg-slate-800/40 rounded-xl border border-border">
-                    <div>
-                      <h4 className="font-bold text-white text-sm">Applicant: {app.applicantName}</h4>
-                      <p className="text-xs text-secondaryText">Target Listing: {job?.title || 'Platform Position'} ({job?.company || 'Employer'})</p>
-                    </div>
-                    <div className="flex items-center gap-3">
+        <div className="card bg-slate-900/80 border border-slate-800 rounded-2xl p-6 space-y-4">
+          <h3 className="text-white font-bold text-base flex items-center gap-2">
+            <FileText className="w-5 h-5 text-purple-400" /> All Platform Submissions
+          </h3>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="border-b border-slate-800 text-slate-400 font-semibold uppercase text-[10px]">
+                  <th className="p-3">Applicant Name</th>
+                  <th className="p-3">Job ID / Title</th>
+                  <th className="p-3">Status</th>
+                  <th className="p-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/60">
+                {applications.map(app => (
+                  <tr key={app.id} className="hover:bg-slate-950/60 transition-colors">
+                    <td className="p-3 font-bold text-white">{app.applicantName}</td>
+                    <td className="p-3 text-slate-300 font-medium">Job #{app.jobId}</td>
+                    <td className="p-3">
                       <select
                         value={app.status}
                         onChange={(e) => updateApplicationStatus(app.id, e.target.value)}
-                        className="form-select text-xs py-1 px-2"
+                        className="bg-slate-950 border border-slate-800 text-[11px] font-bold text-white py-1 px-2.5 rounded-lg outline-none"
                       >
                         <option value="Applied">Applied</option>
                         <option value="Shortlisted">Shortlisted</option>
@@ -440,46 +335,109 @@ const AdminPanel = () => {
                         <option value="Hired">Hired</option>
                         <option value="Rejected">Rejected</option>
                       </select>
+                    </td>
+                    <td className="p-3 text-right">
                       <button
                         onClick={() => deleteApplication(app.id)}
-                        className="p-2 text-rose-400 hover:bg-rose-500/20 rounded-lg transition-colors"
-                        title="Delete Application"
+                        className="p-1.5 text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors border border-rose-500/20"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
-                    </div>
-                  </div>
-                );
-              })
-            )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
 
-      {/* 5. SYSTEM SETTINGS */}
-      {activeTab === 'settings' && (
-        <div className="card space-y-4">
-          <h3>System Settings & Maintenance</h3>
-          <div className="space-y-3">
-            <div className="p-4 bg-slate-800/40 rounded-xl border border-border flex items-center justify-between">
-              <div>
-                <p className="font-semibold text-white text-sm">Platform Maintenance Mode</p>
-                <p className="text-xs text-secondaryText">Restricts new user registration during upgrades</p>
-              </div>
-              <span className="text-xs font-semibold px-3 py-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full">
-                Normal Operational
-              </span>
-            </div>
+      {/* Provision User Modal */}
+      {showAddUserModal && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+              <UserPlus className="w-5 h-5 text-indigo-400" /> Provision Platform User Account
+            </h3>
 
-            <div className="p-4 bg-slate-800/40 rounded-xl border border-border flex items-center justify-between">
-              <div>
-                <p className="font-semibold text-white text-sm">Automated Database Backups</p>
-                <p className="text-xs text-secondaryText">Sync user database & job applications nightly</p>
+            {formError && (
+              <div className="p-3 bg-rose-500/10 border border-rose-500/30 text-rose-400 rounded-xl text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4" /> {formError}
               </div>
-              <span className="text-xs font-semibold px-3 py-1 bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-full">
-                Enabled
-              </span>
-            </div>
+            )}
+            {formSuccess && (
+              <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-xl text-xs flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4" /> {formSuccess}
+              </div>
+            )}
+
+            <form onSubmit={handleAddUser} className="space-y-3">
+              <div>
+                <label className="form-label text-xs">Full Name *</label>
+                <input
+                  type="text"
+                  value={newUser.name}
+                  onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+                  placeholder="John Admin"
+                  className="input-field w-full text-xs bg-slate-950/80 border-slate-800"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="form-label text-xs">Gmail Address *</label>
+                <input
+                  type="email"
+                  value={newUser.email}
+                  onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                  placeholder="newuser@gmail.com"
+                  className="input-field w-full text-xs bg-slate-950/80 border-slate-800"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="form-label text-xs">Password *</label>
+                <input
+                  type="password"
+                  value={newUser.password}
+                  onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                  placeholder="••••••••"
+                  className="input-field w-full text-xs bg-slate-950/80 border-slate-800"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="form-label text-xs">Role Assignment</label>
+                <select
+                  value={newUser.role}
+                  onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+                  className="form-select text-xs py-2.5 bg-slate-950/80 border-slate-800 text-white"
+                >
+                  <option value="user">Applicant</option>
+                  <option value="employer">Employer</option>
+                  <option value="mentor">Mentor</option>
+                  <option value="admin">System Administrator</option>
+                </select>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setShowAddUserModal(false)}
+                  className="btn secondary py-2 px-4 text-xs font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn primary py-2 px-4 text-xs font-bold"
+                >
+                  Provision User
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

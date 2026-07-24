@@ -2,7 +2,7 @@ import React, { createContext, useState, useEffect } from 'react';
 
 export const AppContext = createContext();
 
-// Mock Initial Data
+// Mock Initial Data (Fallback if localStorage is empty)
 const initialJobs = [
   { id: 1, title: 'Frontend Developer', company: 'TechCorp', type: 'Job', status: 'Open', deadline: '2026-12-31', requirements: 'React, Tailwind, 2 years experience.' },
   { id: 2, title: 'React Intern', company: 'StartupInc', type: 'Internship', status: 'Open', deadline: '2026-08-15', requirements: 'Basic HTML/CSS, willing to learn.' },
@@ -32,25 +32,51 @@ const mockUsers = [
   { email: 'admin@gmail.com', password: 'admin123', role: 'admin', name: 'Admin Demo', mobile: '+923009988776', idCard: '12345-9988776-1' },
 ];
 
+const getStoredItem = (key, fallback) => {
+  try {
+    const item = localStorage.getItem(key);
+    return item ? JSON.parse(item) : fallback;
+  } catch (err) {
+    return fallback;
+  }
+};
+
 export const AppProvider = ({ children }) => {
   // Auth State
-  const [currentUser, setCurrentUser] = useState(null);
-  const [usersDb, setUsersDb] = useState(mockUsers);
+  const [currentUser, setCurrentUser] = useState(() => getStoredItem('currentUser', null));
+  const [usersDb, setUsersDb] = useState(() => getStoredItem('jt_users_db', mockUsers));
   
-  // Data State
-  const [jobs, setJobs] = useState(initialJobs);
-  const [applications, setApplications] = useState(initialApplications);
-  const [personalApps, setPersonalApps] = useState(initialPersonalApps);
-  const [mentorships, setMentorships] = useState(initialMentorships);
-  const [courses, setCourses] = useState(initialCourses);
+  // Data State with LocalStorage initialization
+  const [jobs, setJobs] = useState(() => getStoredItem('jt_jobs', initialJobs));
+  const [applications, setApplications] = useState(() => getStoredItem('jt_applications', initialApplications));
+  const [personalApps, setPersonalApps] = useState(() => getStoredItem('jt_personal_apps', initialPersonalApps));
+  const [mentorships, setMentorships] = useState(() => getStoredItem('jt_mentorships', initialMentorships));
+  const [courses, setCourses] = useState(() => getStoredItem('jt_courses', initialCourses));
+
+  // Sync state changes to LocalStorage
+  useEffect(() => {
+    localStorage.setItem('jt_users_db', JSON.stringify(usersDb));
+  }, [usersDb]);
 
   useEffect(() => {
-    // Check local storage for remember me
-    const savedUser = localStorage.getItem('currentUser');
-    if (savedUser) {
-      setCurrentUser(JSON.parse(savedUser));
-    }
-  }, []);
+    localStorage.setItem('jt_jobs', JSON.stringify(jobs));
+  }, [jobs]);
+
+  useEffect(() => {
+    localStorage.setItem('jt_applications', JSON.stringify(applications));
+  }, [applications]);
+
+  useEffect(() => {
+    localStorage.setItem('jt_personal_apps', JSON.stringify(personalApps));
+  }, [personalApps]);
+
+  useEffect(() => {
+    localStorage.setItem('jt_mentorships', JSON.stringify(mentorships));
+  }, [mentorships]);
+
+  useEffect(() => {
+    localStorage.setItem('jt_courses', JSON.stringify(courses));
+  }, [courses]);
 
   // Auth Actions
   const login = (email, password, role, rememberMe) => {
@@ -71,7 +97,7 @@ export const AppProvider = ({ children }) => {
     }
     
     const newUser = { ...userData, registrationDate: new Date().toISOString().split('T')[0] };
-    setUsersDb([...usersDb, newUser]);
+    setUsersDb(prev => [...prev, newUser]);
     
     if (!currentUser || currentUser.role !== 'admin') {
       setCurrentUser(newUser);
@@ -104,68 +130,68 @@ export const AppProvider = ({ children }) => {
   };
 
   const deleteUser = (email) => {
-    setUsersDb(usersDb.filter(u => u.email !== email));
+    setUsersDb(prev => prev.filter(u => u.email !== email));
   };
 
   const updateUserRole = (email, newRole) => {
-    setUsersDb(usersDb.map(u => u.email === email ? { ...u, role: newRole } : u));
+    setUsersDb(prev => prev.map(u => u.email === email ? { ...u, role: newRole } : u));
   };
 
   // Job Actions
   const addJob = (job) => {
-    setJobs([...jobs, { ...job, id: Date.now() }]);
+    setJobs(prev => [...prev, { ...job, id: Date.now() }]);
   };
 
   const deleteJob = (id) => {
-    setJobs(jobs.filter(j => j.id !== id));
-    setApplications(applications.filter(a => a.jobId !== id));
+    setJobs(prev => prev.filter(j => j.id !== id));
+    setApplications(prev => prev.filter(a => a.jobId !== id));
   };
 
   // Application Actions (Platform)
   const applyForJob = (jobId, applicantName) => {
-    setApplications([...applications, { id: Date.now(), jobId, applicantName, status: 'Applied', interviewSchedule: '', feedback: '' }]);
+    setApplications(prev => [...prev, { id: Date.now(), jobId, applicantName, status: 'Applied', interviewSchedule: '', feedback: '' }]);
   };
 
   const updateApplicationStatus = (appId, newStatus) => {
-    setApplications(applications.map(app => app.id === appId ? { ...app, status: newStatus } : app));
+    setApplications(prev => prev.map(app => app.id === appId ? { ...app, status: newStatus } : app));
   };
 
   const updateApplicationDetails = (appId, details) => {
-    setApplications(applications.map(app => app.id === appId ? { ...app, ...details } : app));
+    setApplications(prev => prev.map(app => app.id === appId ? { ...app, ...details } : app));
   };
 
   const deleteApplication = (id) => {
-    setApplications(applications.filter(a => a.id !== id));
+    setApplications(prev => prev.filter(a => a.id !== id));
   };
 
   // Personal Tracker Actions
   const addPersonalApp = (app) => {
-    setPersonalApps([...personalApps, { ...app, id: Date.now(), applicantName: currentUser?.name || 'user' }]);
+    setPersonalApps(prev => [...prev, { ...app, id: Date.now(), applicantName: currentUser?.name || 'user' }]);
   };
 
   const updatePersonalAppStatus = (appId, newStatus) => {
-    setPersonalApps(personalApps.map(app => app.id === appId ? { ...app, status: newStatus } : app));
+    setPersonalApps(prev => prev.map(app => app.id === appId ? { ...app, status: newStatus } : app));
   };
 
   const deletePersonalApp = (id) => {
-    setPersonalApps(personalApps.filter(a => a.id !== id));
+    setPersonalApps(prev => prev.filter(a => a.id !== id));
   };
 
   // Mentor & Course Actions
   const addCourse = (course) => {
-    setCourses([...courses, { ...course, id: Date.now(), mentorName: currentUser?.name || 'Mentor' }]);
+    setCourses(prev => [...prev, { ...course, id: Date.now(), mentorName: currentUser?.name || 'Mentor' }]);
   };
 
   const requestMentorship = (courseId, mentorName, menteeName) => {
-    setMentorships([...mentorships, { id: Date.now(), courseId, mentorName, menteeName, status: 'Pending' }]);
+    setMentorships(prev => [...prev, { id: Date.now(), courseId, mentorName, menteeName, status: 'Pending' }]);
   };
 
   const updateMentorshipStatus = (mentorshipId, newStatus) => {
-    setMentorships(mentorships.map(m => m.id === mentorshipId ? { ...m, status: newStatus } : m));
+    setMentorships(prev => prev.map(m => m.id === mentorshipId ? { ...m, status: newStatus } : m));
   };
 
   const deleteMentorship = (id) => {
-    setMentorships(mentorships.filter(m => m.id !== id));
+    setMentorships(prev => prev.filter(m => m.id !== id));
   };
 
   return (
