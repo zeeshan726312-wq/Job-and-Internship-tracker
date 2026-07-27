@@ -20,7 +20,7 @@ export const dbService = {
       localStorage.setItem(key, JSON.stringify(data));
 
       // 2. Sync asynchronously to Firebase Firestore Cloud API
-      const url = `${FIREBASE_REST_BASE}/${key}?key=${API_KEY}`;
+      const url = `${FIREBASE_REST_BASE}/${key}?updateMask.fieldPaths=json_data&key=${API_KEY}`;
       const payload = {
         fields: {
           json_data: {
@@ -29,11 +29,15 @@ export const dbService = {
         }
       };
 
-      fetch(url, {
+      const res = await fetch(url, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
-      }).catch(err => console.warn('[Firebase Cloud Sync Warning]:', err));
+      });
+
+      if (!res.ok) {
+        console.warn('[Firebase Cloud Sync HTTP Error]:', res.status, await res.text());
+      }
 
       return { success: true };
     } catch (err) {

@@ -140,7 +140,9 @@ export const AppProvider = ({ children }) => {
       return { success: false, message: 'Gmail address already registered.' };
     }
     const newUser = { ...userData };
-    setUsersDb(prev => [...prev, newUser]);
+    const updatedUsers = [...usersDb, newUser];
+    setUsersDb(updatedUsers);
+    dbService.syncCollection('jt_users_db', updatedUsers);
     return { success: true, user: newUser };
   };
 
