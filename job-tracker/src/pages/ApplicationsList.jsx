@@ -18,7 +18,13 @@ import {
   ArrowRight,
   Filter,
   Calendar,
-  Layers
+  Layers,
+  Edit2,
+  Trash2,
+  X,
+  Check,
+  Building2,
+  Link as LinkIcon
 } from 'lucide-react';
 
 const ApplicationsList = () => {
@@ -27,8 +33,10 @@ const ApplicationsList = () => {
     applications, 
     personalApps, 
     currentUser, 
-    updatePersonalAppStatus, 
-    updateApplicationStatus 
+    editPersonalApp,
+    updateApplicationDetails,
+    deletePersonalApp,
+    deleteApplication
   } = useContext(AppContext);
   const navigate = useNavigate();
 
@@ -36,16 +44,33 @@ const ApplicationsList = () => {
   const [filterType, setFilterType] = useState('All'); // All, Job, Internship
   const [filterStatus, setFilterStatus] = useState('All'); // All, Applied, Interview, Hired, Rejected
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Edit Modal State
+  const [editingApp, setEditingApp] = useState(null);
+  const [editFormData, setEditFormData] = useState({
+    title: '',
+    company: '',
+    type: 'Job',
+    status: 'Applied',
+    deadline: '',
+    interviewSchedule: '',
+    link: '',
+    notes: ''
+  });
 
   const applicantName = currentUser?.name || 'user';
 
-  const myApplications = applications.filter(app => app.applicantName === applicantName);
-  const myPersonalApps = personalApps.filter(app => app.applicantName === applicantName);
+  const safeApps = Array.isArray(applications) ? applications : [];
+  const safePersonal = Array.isArray(personalApps) ? personalApps : [];
+  const safeJobsList = Array.isArray(jobs) ? jobs : [];
+
+  const myApplications = safeApps.filter(app => app && (app.applicantName === applicantName || currentUser?.role === 'employer' || currentUser?.role === 'admin'));
+  const myPersonalApps = safePersonal.filter(app => app && (app.applicantName === applicantName || currentUser?.role === 'admin'));
 
   // Combine both sources into a unified list
   const combinedApps = [
     ...myApplications.map(app => {
-      const job = jobs.find(j => j.id === app.jobId);
+      const job = safeJobsList.find(j => j && j.id === app.jobId);
       return {
         id: `plat-${app.id}`,
         originalId: app.id,
@@ -56,8 +81,8 @@ const ApplicationsList = () => {
         status: app.status || 'Applied',
         deadline: job?.deadline || 'N/A',
         link: '#',
-        interviewSchedule: app.interviewSchedule,
-        feedback: app.feedback
+        interviewSchedule: app.interviewSchedule || '',
+        feedback: app.feedback || ''
       };
     }),
     ...myPersonalApps.map(app => ({
@@ -70,8 +95,10 @@ const ApplicationsList = () => {
       status: app.status || 'Applied',
       deadline: app.deadline || 'N/A',
       link: app.link || '#',
+      interviewSchedule: app.interviewSchedule || '',
       workMode: app.workMode,
-      experienceLevel: app.experienceLevel
+      experienceLevel: app.experienceLevel,
+      notes: app.notes || ''
     }))
   ];
 
@@ -84,24 +111,92 @@ const ApplicationsList = () => {
     return matchesSearch && matchesType && matchesStatus;
   });
 
-  const handleStatusChange = (app, newStatus) => {
-    if (app.source === 'Personal') {
-      updatePersonalAppStatus(app.originalId, newStatus);
-    } else {
-      updateApplicationStatus(app.originalId, newStatus);
+  const handleDelete = (app) => {
+    if (window.confirm(`Are you sure you want to delete "${app.title}" at ${app.company}?`)) {
+      if (app.source === 'Personal') {
+        deletePersonalApp(app.originalId);
+      } else {
+        deleteApplication(app.originalId);
+      }
     }
   };
 
-  const StatusIcon = ({ status }) => {
+  const openEditModal = (app) => {
+    setEditingApp(app);
+    setEditFormData({
+      title: app.title,
+      company: app.company,
+      type: app.type || 'Job',
+      status: app.status || 'Applied',
+      deadline: app.deadline === 'N/A' ? '' : app.deadline,
+      interviewSchedule: app.interviewSchedule || '',
+      link: app.link === '#' ? '' : app.link,
+      notes: app.notes || app.feedback || ''
+    });
+  };
+
+  const handleEditSubmit = (e) => {
+    e.preventDefault();
+    if (!editingApp) return;
+
+    if (editingApp.source === 'Personal') {
+      editPersonalApp(editingApp.originalId, {
+        title: editFormData.title,
+        company: editFormData.company,
+        type: editFormData.type,
+        deadline: editFormData.deadline || 'N/A',
+        interviewSchedule: editFormData.interviewSchedule,
+        link: editFormData.link || '#',
+        notes: editFormData.notes
+      });
+    } else {
+      updateApplicationDetails(editingApp.originalId, {
+        interviewSchedule: editFormData.interviewSchedule,
+        feedback: editFormData.notes
+      });
+    }
+
+    setEditingApp(null);
+  };
+
+  const StatusBadge = ({ status }) => {
+    let colorClasses = 'bg-slate-500/10 text-slate-400 border-slate-500/20';
+    let icon = <Clock className="w-3.5 h-3.5 text-slate-400" />;
+
     switch (status) {
       case 'Applied':
-      case 'Pending': return <Clock className="w-3.5 h-3.5 text-amber-400" />;
-      case 'Shortlisted': return <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400" />;
-      case 'Interview': return <Video className="w-3.5 h-3.5 text-purple-400" />;
-      case 'Hired': return <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />;
-      case 'Rejected': return <XCircle className="w-3.5 h-3.5 text-rose-400" />;
-      default: return <Clock className="w-3.5 h-3.5 text-slate-400" />;
+      case 'Pending':
+        colorClasses = 'bg-amber-500/10 text-amber-400 border-amber-500/30';
+        icon = <Clock className="w-3.5 h-3.5 text-amber-400" />;
+        break;
+      case 'Shortlisted':
+        colorClasses = 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30';
+        icon = <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400" />;
+        break;
+      case 'Interview':
+        colorClasses = 'bg-purple-500/10 text-purple-400 border-purple-500/30';
+        icon = <Video className="w-3.5 h-3.5 text-purple-400" />;
+        break;
+      case 'Hired':
+      case 'Offered':
+      case 'Accepted':
+        colorClasses = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30';
+        icon = <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />;
+        break;
+      case 'Rejected':
+        colorClasses = 'bg-rose-500/10 text-rose-400 border-rose-500/30';
+        icon = <XCircle className="w-3.5 h-3.5 text-rose-400" />;
+        break;
+      default:
+        break;
     }
+
+    return (
+      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border ${colorClasses}`}>
+        {icon}
+        <span>{status}</span>
+      </span>
+    );
   };
 
   const kanbanColumns = [
@@ -117,21 +212,21 @@ const ApplicationsList = () => {
       {/* Header Bar */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-extrabold text-white tracking-tight flex items-center gap-2.5">
-            <FileText className="w-6 h-6 text-indigo-400" /> Application Pipeline & Tracker
+          <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
+            <FileText className="w-6 h-6 text-emerald-500" /> Application Pipeline & Tracker
           </h2>
-          <p className="text-xs text-slate-400 mt-1">
-            Monitor and manage all active job & internship submissions across stages.
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            View status updates assigned by employers and track active job & internship submissions.
           </p>
         </div>
 
         <div className="flex items-center gap-3">
           {/* View Toggle */}
-          <div className="flex bg-slate-900 border border-slate-800 p-1 rounded-xl">
+          <div className="flex bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 p-1 rounded-xl">
             <button
               onClick={() => setViewMode('kanban')}
-              className={`p-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors ${
-                viewMode === 'kanban' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+              className={`p-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors ${
+                viewMode === 'kanban' ? 'bg-emerald-600 text-white shadow-md keep-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
               title="Kanban Board View"
             >
@@ -139,8 +234,8 @@ const ApplicationsList = () => {
             </button>
             <button
               onClick={() => setViewMode('list')}
-              className={`p-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors ${
-                viewMode === 'list' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+              className={`p-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors ${
+                viewMode === 'list' ? 'bg-emerald-600 text-white shadow-md keep-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
               title="Detailed List View"
             >
@@ -150,9 +245,9 @@ const ApplicationsList = () => {
 
           <button
             onClick={() => navigate('/apply')}
-            className="btn primary py-2.5 px-4 text-xs font-bold shadow-lg shadow-indigo-500/25 flex items-center gap-2"
+            className="btn bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 px-4 text-xs font-bold shadow-lg shadow-emerald-500/25 flex items-center gap-2 keep-white border-0"
           >
-            <PlusCircle className="w-4 h-4" /> Log Application
+            <PlusCircle className="w-4 h-4" /> Add Application
           </button>
         </div>
       </div>
@@ -216,11 +311,11 @@ const ApplicationsList = () => {
             );
 
             return (
-              <div key={col.key} className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-3 flex flex-col gap-3 min-h-[500px]">
+              <div key={col.key} className="bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800/80 rounded-2xl p-3 flex flex-col gap-3 min-h-[500px]">
                 {/* Column Header */}
                 <div className={`p-2.5 rounded-xl border flex items-center justify-between font-bold text-xs ${col.color}`}>
                   <span>{col.label}</span>
-                  <span className="px-2 py-0.5 rounded-full bg-slate-950 text-white text-[11px]">
+                  <span className="px-2 py-0.5 rounded-full bg-slate-900 text-white keep-white font-bold text-[11px]">
                     {colApps.length}
                   </span>
                 </div>
@@ -228,14 +323,14 @@ const ApplicationsList = () => {
                 {/* Column Cards */}
                 <div className="space-y-3 flex-1">
                   {colApps.length === 0 ? (
-                    <div className="border border-dashed border-slate-800/80 rounded-xl p-4 text-center text-slate-500 text-xs py-8">
+                    <div className="border border-dashed border-slate-300 dark:border-slate-800/80 rounded-xl p-4 text-center text-slate-500 text-xs py-8">
                       No applications
                     </div>
                   ) : (
                     colApps.map(app => (
                       <div 
                         key={app.id} 
-                        className="bg-slate-950/80 border border-slate-800 hover:border-slate-700 p-4 rounded-xl space-y-2.5 shadow-lg transition-all"
+                        className="bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 hover:border-indigo-400 p-4 rounded-xl space-y-2.5 shadow-md transition-all"
                       >
                         <div className="flex justify-between items-start">
                           <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase border ${
@@ -245,29 +340,49 @@ const ApplicationsList = () => {
                           }`}>
                             {app.type}
                           </span>
-                          <span className="text-[10px] text-slate-500 font-medium">
-                            {app.source}
-                          </span>
+                          
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => openEditModal(app)}
+                              className="text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors"
+                              title="Edit Application Details"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(app)}
+                              className="text-slate-500 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors"
+                              title="Delete Application"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </div>
 
                         <div>
-                          <h4 className="font-bold text-xs text-white leading-snug">{app.title}</h4>
-                          <p className="text-[11px] text-slate-400 font-medium mt-0.5">{app.company}</p>
+                          <h4 className="font-bold text-xs text-slate-900 dark:text-white leading-snug">{app.title}</h4>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">{app.company}</p>
                         </div>
 
-                        {/* Status Select inside Card */}
+                        {/* Deadline & Interview Schedule Tracking Fields */}
+                        <div className="space-y-1 pt-1 text-[11px] text-slate-400">
+                          {app.deadline && app.deadline !== 'N/A' && (
+                            <div className="flex items-center gap-1.5 text-amber-300/90">
+                              <Calendar className="w-3 h-3 text-amber-400 shrink-0" />
+                              <span>Deadline: {app.deadline}</span>
+                            </div>
+                          )}
+                          {app.interviewSchedule && (
+                            <div className="flex items-center gap-1.5 text-purple-300/90 font-semibold">
+                              <Video className="w-3 h-3 text-purple-400 shrink-0" />
+                              <span>Interview: {app.interviewSchedule}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Read-Only Status Display for Applicant */}
                         <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between">
-                          <select
-                            value={app.status}
-                            onChange={(e) => handleStatusChange(app, e.target.value)}
-                            className="bg-slate-900 border border-slate-800 text-[10px] font-bold text-slate-300 py-1 px-2 rounded-lg cursor-pointer outline-none hover:border-slate-700"
-                          >
-                            <option value="Applied">Applied</option>
-                            <option value="Shortlisted">Shortlisted</option>
-                            <option value="Interview">Interview</option>
-                            <option value="Hired">Hired</option>
-                            <option value="Rejected">Rejected</option>
-                          </select>
+                          <StatusBadge status={app.status} />
 
                           {app.link && app.link !== '#' && (
                             <a
@@ -298,7 +413,7 @@ const ApplicationsList = () => {
             <div className="card text-center py-12 border-slate-800">
               <FileText className="w-12 h-12 mx-auto text-slate-600 mb-3" />
               <h3 className="text-lg font-bold text-white">No Applications Found</h3>
-              <p className="text-xs text-slate-400 mt-1">Try adjusting your filter search terms or log a new application.</p>
+              <p className="text-xs text-slate-400 mt-1">Try adjusting your filter search terms or add a new application.</p>
               <button
                 onClick={() => navigate('/apply')}
                 className="btn primary py-2 px-4 text-xs font-bold mt-4"
@@ -327,29 +442,45 @@ const ApplicationsList = () => {
                         {app.source} Source
                       </span>
                     </div>
-                    <p className="text-xs font-semibold text-slate-400 flex items-center gap-2">
-                      <Briefcase className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                      <span>{app.company}</span>
-                      {app.workMode && <span className="text-slate-500">({app.workMode})</span>}
+
+                    <p className="text-xs font-semibold text-slate-400 flex items-center gap-3 flex-wrap">
+                      <span className="flex items-center gap-1">
+                        <Briefcase className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                        {app.company}
+                      </span>
+                      {app.deadline && app.deadline !== 'N/A' && (
+                        <span className="flex items-center gap-1 text-amber-300/90">
+                          <Calendar className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                          Deadline: {app.deadline}
+                        </span>
+                      )}
+                      {app.interviewSchedule && (
+                        <span className="flex items-center gap-1 text-purple-300/90 font-semibold">
+                          <Video className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                          Interview: {app.interviewSchedule}
+                        </span>
+                      )}
                     </p>
                   </div>
 
                   <div className="flex items-center gap-3 flex-wrap md:flex-nowrap">
-                    {/* Status Dropdown */}
-                    <div className="flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800">
-                      <StatusIcon status={app.status} />
-                      <select
-                        value={app.status}
-                        onChange={(e) => handleStatusChange(app, e.target.value)}
-                        className="bg-transparent text-xs font-bold text-white outline-none cursor-pointer"
-                      >
-                        <option value="Applied" className="bg-slate-950 text-amber-400">Applied</option>
-                        <option value="Shortlisted" className="bg-slate-950 text-indigo-400">Shortlisted</option>
-                        <option value="Interview" className="bg-slate-950 text-purple-400">Interview</option>
-                        <option value="Hired" className="bg-slate-950 text-emerald-400">Hired</option>
-                        <option value="Rejected" className="bg-slate-950 text-rose-400">Rejected</option>
-                      </select>
-                    </div>
+                    {/* Read-Only Status Display for Applicant */}
+                    <StatusBadge status={app.status} />
+
+                    <button
+                      onClick={() => openEditModal(app)}
+                      className="btn secondary py-1.5 px-3 text-xs flex items-center gap-1"
+                    >
+                      <Edit2 className="w-3.5 h-3.5 text-indigo-400" /> Edit
+                    </button>
+
+                    <button
+                      onClick={() => handleDelete(app)}
+                      className="p-2 text-slate-400 hover:text-rose-400 bg-slate-950 hover:bg-rose-500/10 border border-slate-800 rounded-xl transition-colors"
+                      title="Delete Application"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
 
                     {app.link && app.link !== '#' && (
                       <a
@@ -366,6 +497,139 @@ const ApplicationsList = () => {
               </div>
             ))
           )}
+        </div>
+      )}
+
+      {/* EDIT APPLICATION MODAL */}
+      {editingApp && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <Edit2 className="w-5 h-5 text-indigo-400" /> Edit Application Details
+              </h3>
+              <button
+                onClick={() => setEditingApp(null)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleEditSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="form-label text-xs">Job Title</label>
+                  <input
+                    type="text"
+                    value={editFormData.title}
+                    onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
+                    disabled={editingApp.source === 'Platform'}
+                    className="input-field text-xs bg-slate-950 border-slate-800 disabled:opacity-60"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="form-label text-xs">Company / Organization</label>
+                  <input
+                    type="text"
+                    value={editFormData.company}
+                    onChange={(e) => setEditFormData({ ...editFormData, company: e.target.value })}
+                    disabled={editingApp.source === 'Platform'}
+                    className="input-field text-xs bg-slate-950 border-slate-800 disabled:opacity-60"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="form-label text-xs">Current Application Status (Employer Managed)</label>
+                  <div className="pt-1">
+                    <StatusBadge status={editFormData.status} />
+                  </div>
+                  <p className="text-[10px] text-slate-500 mt-1">
+                    * Status is updated by the employer/recruiter in their employer portal.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="form-label text-xs">Application Type</label>
+                  <select
+                    value={editFormData.type}
+                    onChange={(e) => setEditFormData({ ...editFormData, type: e.target.value })}
+                    disabled={editingApp.source === 'Platform'}
+                    className="form-select text-xs bg-slate-950 border-slate-800 text-white disabled:opacity-60"
+                  >
+                    <option value="Job">Job</option>
+                    <option value="Internship">Internship</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="form-label text-xs">Target Deadline</label>
+                  <input
+                    type="date"
+                    value={editFormData.deadline}
+                    onChange={(e) => setEditFormData({ ...editFormData, deadline: e.target.value })}
+                    disabled={editingApp.source === 'Platform'}
+                    className="input-field text-xs bg-slate-950 border-slate-800 disabled:opacity-60 text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="form-label text-xs">Interview Schedule Date / Time</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 2026-08-10 at 10:00 AM"
+                    value={editFormData.interviewSchedule}
+                    onChange={(e) => setEditFormData({ ...editFormData, interviewSchedule: e.target.value })}
+                    className="input-field text-xs bg-slate-950 border-slate-800 text-white"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="form-label text-xs">External Link / Portfolio URL</label>
+                <input
+                  type="url"
+                  placeholder="https://company.com/careers"
+                  value={editFormData.link}
+                  onChange={(e) => setEditFormData({ ...editFormData, link: e.target.value })}
+                  className="input-field text-xs bg-slate-950 border-slate-800 text-white"
+                />
+              </div>
+
+              <div>
+                <label className="form-label text-xs">Notes / Candidate Preparation</label>
+                <textarea
+                  value={editFormData.notes}
+                  onChange={(e) => setEditFormData({ ...editFormData, notes: e.target.value })}
+                  placeholder="Add your preparation notes or application reminders..."
+                  className="form-textarea text-xs bg-slate-950 border-slate-800 text-white min-h-[70px]"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingApp(null)}
+                  className="btn secondary py-2 px-4 text-xs font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn primary py-2 px-5 text-xs font-bold shadow-lg shadow-indigo-500/25 flex items-center gap-1.5"
+                >
+                  <Check className="w-4 h-4" /> Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>

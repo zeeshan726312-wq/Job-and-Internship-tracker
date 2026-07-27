@@ -430,7 +430,7 @@ body {
 }
 
 .stat-card {
-  background: linear-gradient(135deg, rgba(15, 23, 42, 0.85), rgba(30, 41, 59, 0.6));
+  background-color: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: 20px;
@@ -480,3 +480,290 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* Light Theme Overrides */
+html.light {
+  --bg-color: #f8fafc;
+  --sidebar-bg: #ffffff;
+  --card-bg: #ffffff;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --border: #e2e8f0;
+  color-scheme: light;
+}
+
+html.light body {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.08) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(168, 85, 247, 0.06) 0px, transparent 50%);
+}
+
+html.light .sidebar {
+  background-color: #ffffff !important;
+  border-right-color: #e2e8f0 !important;
+}
+
+html.light .topbar {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border-bottom-color: #e2e8f0 !important;
+  box-shadow: 0 1px 4px 0 rgba(0, 0, 0, 0.05);
+}
+
+/* Headings & Upper Titles in Light Mode */
+html.light .topbar h1,
+html.light h1:not(.keep-white),
+html.light h2:not(.keep-white),
+html.light h3:not(.keep-white),
+html.light h4:not(.keep-white) {
+  color: #0f172a !important;
+}
+
+.auth-hero-title {
+  color: #ffffff;
+}
+
+html.light .auth-hero-title {
+  color: #fde047 !important; /* Soft Light Yellow in Light Mode */
+}
+
+.keep-gradient,
+html.light .keep-gradient {
+  background-image: linear-gradient(to right, #818cf8, #c084fc, #f472b6) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  color: transparent !important;
+}
+
+.keep-subtext,
+html.light .keep-subtext {
+  color: #cbd5e1 !important; /* Original Slate-300 Text Color */
+}
+
+/* Text Visibility in Light Mode */
+html.light p:not(.keep-white),
+html.light span:not(.keep-white):not(.status):not(.btn):not(.auth-hero-title) {
+  color: inherit;
+}
+
+html.light .text-white:not(.keep-white) {
+  color: #0f172a !important;
+}
+
+html.light .text-slate-100:not(.keep-white),
+html.light .text-slate-200:not(.keep-white),
+html.light .text-slate-300:not(.keep-white) {
+  color: #1e293b !important;
+}
+
+html.light .text-slate-400 {
+  color: #475569 !important;
+}
+
+html.light .text-slate-500 {
+  color: #64748b !important;
+}
+
+.keep-white,
+html.light .keep-white {
+  color: #ffffff !important;
+}
+
+/* Main Layout & Containers */
+html.light .main-content,
+html.light .page-content,
+html.light .panel-container {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+/* Cards & Panels in Light Mode */
+html.light .card,
+html.light .stat-card {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  background-image: none !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 4px 18px -2px rgba(0, 0, 0, 0.08) !important;
+  color: #0f172a !important;
+}
+
+html.light .stat-card h4 {
+  color: #475569 !important;
+}
+
+html.light .stat-card h2 {
+  color: #0f172a !important;
+  background: none !important;
+  -webkit-text-fill-color: #0f172a !important;
+}
+
+html.light .stat-card span {
+  color: #64748b !important;
+}
+
+html.light .stat-card .bg-slate-800 {
+  background-color: #e2e8f0 !important;
+}
+
+/* Inner Item Cards & Containers inside Boxes */
+html.light .bg-slate-950,
+html.light .bg-slate-900,
+html.light .bg-slate-950\/80,
+html.light .bg-slate-900\/80,
+html.light .bg-slate-900\/60,
+html.light .bg-slate-900\/90 {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+/* Inputs & Form Controls */
+html.light .input-field,
+html.light .form-select,
+html.light .form-textarea,
+html.light input,
+html.light select,
+html.light textarea {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+html.light input::placeholder,
+html.light textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* Borders */
+html.light .border-slate-800,
+html.light .border-slate-800\/80,
+html.light .border-slate-700 {
+  border-color: #cbd5e1 !important;
+}
+
+/* Navigation Links */
+html.light .nav-link {
+  color: #475569 !important;
+}
+
+html.light .nav-link:hover {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+html.light .nav-link.active {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(168, 85, 247, 0.1)) !important;
+  color: #4f46e5 !important;
+  border-color: rgba(99, 102, 241, 0.3) !important;
+}
+
+/* Secondary Buttons & Actions */
+html.light .btn.secondary {
+  background-color: #f1f5f9 !important;
+  color: #1e293b !important;
+  border-color: #cbd5e1 !important;
+}
+
+html.light .btn.secondary:hover {
+  background-color: #e2e8f0 !important;
+}
+
+/* High-Contrast Status Badges & Column Colors in Light Mode */
+html.light .text-amber-400 {
+  color: #d97706 !important;
+}
+
+html.light .text-indigo-400 {
+  color: #4f46e5 !important;
+}
+
+html.light .text-purple-400 {
+  color: #7c3aed !important;
+}
+
+html.light .text-emerald-400 {
+  color: #059669 !important; /* Deep Rich Emerald Green for High Contrast */
+}
+
+html.light .text-rose-400 {
+  color: #e11d48 !important;
+}
+
+html.light .bg-emerald-500\/10 {
+  background-color: #d1fae5 !important;
+  border-color: #a7f3d0 !important;
+}
+
+html.light .bg-amber-500\/10 {
+  background-color: #fef3c7 !important;
+  border-color: #fde68a !important;
+}
+
+html.light .bg-indigo-500\/10 {
+  background-color: #e0e7ff !important;
+  border-color: #c7d2fe !important;
+}
+
+html.light .bg-purple-500\/10 {
+  background-color: #f3e8ff !important;
+  border-color: #e9d5ff !important;
+}
+
+html.light .bg-rose-500\/10 {
+  background-color: #ffe4e6 !important;
+  border-color: #fecdd3 !important;
+}
+
+/* --- COMPREHENSIVE RESPONSIVE BREAKPOINTS (Mobile, Tablet, Desktop) --- */
+@media (max-width: 1024px) {
+  .grid-2 {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-content {
+    padding: 14px !important;
+  }
+  .topbar {
+    padding: 10px 14px !important;
+  }
+  .card {
+    padding: 16px !important;
+    border-radius: 16px !important;
+  }
+  .stats-grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+  /* Touch-friendly inputs and prevent auto-zoom on mobile */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="date"],
+  input[type="datetime-local"],
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-content {
+    padding: 10px !important;
+  }
+  .panel-container {
+    gap: 16px !important;
+  }
+  .btn {
+    padding: 8px 12px !important;
+    font-size: 12px !important;
+  }
+}
+
+
+
+

@@ -1,7 +1,6 @@
 import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AppContext } from '../context/AppContext';
-import dashboardBg from '../../../Untitled design.png';
 import { 
   LogIn, 
   UserPlus, 
@@ -27,10 +26,13 @@ import {
   Fingerprint,
   ArrowRight,
   ChevronRight,
-  Star
+  Star,
+  Sun,
+  Moon
 } from 'lucide-react';
 
 const AuthPage = () => {
+  const { login, signup, resetPassword, usersDb, theme, toggleTheme } = useContext(AppContext);
   const [isLogin, setIsLogin] = useState(true);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [forgotStep, setForgotStep] = useState(1); // 1: Gmail, 2: Verification, 3: New Password
@@ -56,7 +58,6 @@ const AuthPage = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isSendingEmail, setIsSendingEmail] = useState(false);
 
-  const { login, signup, resetPassword, usersDb } = useContext(AppContext);
   const navigate = useNavigate();
 
   const validateGmail = (mail) => mail && mail.includes('@') && mail.endsWith('@gmail.com');
@@ -73,7 +74,7 @@ const AuthPage = () => {
         else if (role === 'mentor') navigate('/mentor');
         else navigate('/');
       } else {
-        setError(res.error);
+        setError(res.message || res.error || 'Invalid credentials or role selection.');
       }
     } else {
       if (!validateGmail(email)) {
@@ -105,7 +106,7 @@ const AuthPage = () => {
         setMobileNumber('');
         setIdCard('');
       } else {
-        setError(res.error);
+        setError(res.message || res.error || 'Registration failed.');
       }
     }
   };
@@ -531,10 +532,24 @@ const AuthPage = () => {
   // ── Main Hero Landing & Auth Screen ──────────────────────────────────
   return (
     <div className="min-h-screen flex items-center justify-center bg-bg px-4 py-12 relative overflow-hidden font-sans">
-      {/* Background Ambient Dashboard Photo Overlay */}
+      {/* Light / Dark Mode Toggle Button */}
+      <div className="absolute top-4 right-4 z-50">
+        <button
+          onClick={toggleTheme}
+          className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 text-amber-400 hover:text-amber-300 hover:bg-slate-800 transition-all backdrop-blur-md shadow-lg"
+          title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
+        >
+          {theme === 'dark' ? (
+            <Sun className="w-5 h-5 text-amber-400" />
+          ) : (
+            <Moon className="w-5 h-5 text-indigo-400" />
+          )}
+        </button>
+      </div>
+
+      {/* Background Ambient Overlay */}
       <div 
-        className="fixed inset-0 pointer-events-none opacity-[0.18] bg-cover bg-center bg-no-repeat z-0 filter brightness-90 contrast-110"
-        style={{ backgroundImage: `url(${dashboardBg})` }}
+        className="fixed inset-0 pointer-events-none opacity-[0.25] bg-gradient-to-br from-indigo-900/40 via-slate-900 to-purple-950/40 z-0"
       />
 
       {/* Radial Lights */}
@@ -552,16 +567,16 @@ const AuthPage = () => {
             <span>TrackerPro Next-Gen Career Command Center</span>
           </div>
 
-          {/* Grammar-Corrected Large Headline */}
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white tracking-tight leading-[1.12]">
-            A New Era Begins: <br />
-            <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent drop-shadow-sm">
+          {/* Large Hero Headline */}
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight leading-[1.12]">
+            <span className="auth-hero-title">A New Era Begins:</span> <br />
+            <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent drop-shadow-sm keep-gradient">
               Step Into Professional Life
             </span>
           </h1>
 
           {/* Subtext Description */}
-          <p className="text-slate-300 text-sm md:text-base leading-relaxed max-w-xl font-medium">
+          <p className="text-white text-sm md:text-base leading-relaxed max-w-xl font-medium keep-white">
             Empowering students, recruiters, and mentors in one unified platform. Track applications, organize candidate listings, and accelerate career growth with state-of-the-art tools.
           </p>
 
@@ -631,28 +646,28 @@ const AuthPage = () => {
             </div>
 
             {/* Tab Switcher */}
-            <div className="flex bg-slate-950/90 p-1.5 rounded-xl border border-slate-800">
+            <div className="flex bg-slate-100 dark:bg-slate-950/90 p-1.5 rounded-xl border border-slate-300 dark:border-slate-800 shadow-inner">
               <button
                 type="button"
                 onClick={() => { setIsLogin(true); setError(''); setSuccessMessage(''); }}
-                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${
+                className={`flex-1 py-2.5 text-xs font-extrabold rounded-lg transition-all flex items-center justify-center gap-2 ${
                   isLogin 
-                    ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-lg shadow-indigo-500/30' 
-                    : 'text-slate-400 hover:text-white'
+                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30 keep-white' 
+                    : 'text-slate-700 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-white font-bold'
                 }`}
               >
-                <LogIn className="w-3.5 h-3.5" /> Sign In
+                <LogIn className="w-4 h-4" /> Sign In
               </button>
               <button
                 type="button"
                 onClick={() => { setIsLogin(false); setError(''); setSuccessMessage(''); }}
-                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${
+                className={`flex-1 py-2.5 text-xs font-extrabold rounded-lg transition-all flex items-center justify-center gap-2 ${
                   !isLogin 
-                    ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-lg shadow-indigo-500/30' 
-                    : 'text-slate-400 hover:text-white'
+                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30 keep-white' 
+                    : 'text-slate-700 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-white font-bold'
                 }`}
               >
-                <UserPlus className="w-3.5 h-3.5" /> Register
+                <UserPlus className="w-4 h-4" /> Register
               </button>
             </div>
 
@@ -812,7 +827,6 @@ const AuthPage = () => {
             </form>
           </div>
         </div>
-
       </div>
     </div>
   );
