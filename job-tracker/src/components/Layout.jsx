@@ -116,16 +116,16 @@ const Layout = () => {
       {/* Mobile Sidebar Overlay Backdrop */}
       {mobileOpen && (
         <div 
-          className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-40 lg:hidden"
+          className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-40 lg:hidden cursor-pointer"
           onClick={() => setMobileOpen(false)}
         />
       )}
 
       {/* Main Sidebar Navigation */}
       <aside className={`
-        fixed lg:static top-0 bottom-0 left-0 z-50
-        w-64 sidebar border-r border-slate-800/80 flex flex-col justify-between
-        transition-transform duration-300 ease-in-out
+        fixed lg:static top-0 bottom-0 left-0 z-50 h-full
+        w-72 bg-slate-900/95 border-r border-slate-800 flex flex-col justify-between
+        transition-transform duration-300 ease-in-out shadow-2xl backdrop-blur-xl
         ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
         {/* Brand Header */}
@@ -295,10 +295,11 @@ const Layout = () => {
         <header className="topbar h-16 border-b border-slate-800/80 px-4 sm:px-8 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
             <button 
-              onClick={() => setMobileOpen(true)}
-              className="lg:hidden p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white"
+              onClick={() => setMobileOpen(prev => !prev)}
+              className="lg:hidden p-2 rounded-xl bg-slate-900 border border-slate-800 text-emerald-400 hover:text-white hover:bg-slate-800 transition-all cursor-pointer shadow-md"
+              aria-label="Toggle Navigation Drawer"
             >
-              <Menu className="w-5 h-5" />
+              <Menu className="w-5 h-5 text-emerald-400" />
             </button>
 
             <div className="flex items-center gap-2">

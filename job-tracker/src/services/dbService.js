@@ -1,44 +1,78 @@
-import { isFirebaseConfigured } from '../config/firebase';
-import { isSupabaseConfigured } from '../config/supabase';
+import { firebaseConfig } from '../config/firebase';
 
 /**
- * Unified Database Service Layer
- * Automatically manages database operations across LocalStorage, Firebase, or Supabase.
+ * Unified Firebase Firestore REST Cloud Database Service
+ * Persists data to Firebase Firestore Cloud + LocalStorage for instant multi-device sync worldwide.
  */
 
+const FIREBASE_REST_BASE = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents/tracker_data`;
+const API_KEY = firebaseConfig.apiKey;
+
 export const dbService = {
-  // Get current active database provider name
   getProvider() {
-    if (isFirebaseConfigured) return 'Firebase Firestore';
-    if (isSupabaseConfigured) return 'Supabase PostgreSQL';
-    return 'Browser LocalStorage';
+    return 'Firebase Firestore Cloud REST';
   },
 
-  // Save item to storage
+  // Write data to LocalStorage + Firebase Firestore Cloud
   async setItem(key, data) {
     try {
+      // 1. Save to local storage for zero latency
       localStorage.setItem(key, JSON.stringify(data));
+
+      // 2. Sync asynchronously to Firebase Firestore Cloud API
+      const url = `${FIREBASE_REST_BASE}/${key}?key=${API_KEY}`;
+      const payload = {
+        fields: {
+          json_data: {
+            stringValue: JSON.stringify(data)
+          }
+        }
+      };
+
+      fetch(url, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }).catch(err => console.warn('[Firebase Cloud Sync Warning]:', err));
+
       return { success: true };
     } catch (err) {
-      console.error(`[dbService] Error writing ${key}:`, err);
+      console.error(`[dbService] Error setting ${key}:`, err);
       return { success: false, error: err.message };
     }
   },
 
-  // Get item from storage
+  // Read data from Firebase Firestore Cloud with LocalStorage fallback
   async getItem(key, fallback) {
     try {
-      const item = localStorage.getItem(key);
-      if (!item) return fallback;
-      const parsed = JSON.parse(item);
-      return (parsed !== null && parsed !== undefined) ? parsed : fallback;
+      // 1. Try reading local storage first for speed
+      const local = localStorage.getItem(key);
+      let localData = local ? JSON.parse(local) : null;
+
+      // 2. Fetch latest live cloud data from Firebase Firestore REST API
+      const url = `${FIREBASE_REST_BASE}/${key}?key=${API_KEY}`;
+      const response = await fetch(url);
+      
+      if (response.ok) {
+        const cloudResult = await response.json();
+        const jsonString = cloudResult?.fields?.json_data?.stringValue;
+        if (jsonString) {
+          const cloudData = JSON.parse(jsonString);
+          // Sync back to local storage
+          localStorage.setItem(key, JSON.stringify(cloudData));
+          return cloudData;
+        }
+      }
+
+      return localData || fallback;
     } catch (err) {
-      console.error(`[dbService] Error reading ${key}:`, err);
-      return fallback;
+      console.warn(`[dbService] Reading ${key} from cloud fallback to local:`, err);
+      const local = localStorage.getItem(key);
+      return local ? JSON.parse(local) : fallback;
     }
   },
 
-  // Sync state helper
+  // Sync collection helper
   syncCollection(key, data) {
     this.setItem(key, data);
   }

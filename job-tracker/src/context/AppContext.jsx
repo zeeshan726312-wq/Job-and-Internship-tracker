@@ -96,6 +96,33 @@ export const AppProvider = ({ children }) => {
   useEffect(() => { dbService.syncCollection('jt_mentorships', mentorships); }, [mentorships]);
   useEffect(() => { dbService.syncCollection('jt_mentor_apps', mentorApps); }, [mentorApps]);
 
+  // Fetch latest live data from Firebase Cloud on startup across all devices
+  useEffect(() => {
+    const fetchCloudData = async () => {
+      try {
+        const cloudUsers = await dbService.getItem('jt_users_db', null);
+        if (cloudUsers && Array.isArray(cloudUsers) && cloudUsers.length > 0) {
+          setUsersDb(cloudUsers);
+        }
+        const cloudJobs = await dbService.getItem('jt_jobs', null);
+        if (cloudJobs && Array.isArray(cloudJobs) && cloudJobs.length > 0) {
+          setJobs(cloudJobs);
+        }
+        const cloudApps = await dbService.getItem('jt_applications', null);
+        if (cloudApps && Array.isArray(cloudApps) && cloudApps.length > 0) {
+          setApplications(cloudApps);
+        }
+        const cloudMentorApps = await dbService.getItem('jt_mentor_apps', null);
+        if (cloudMentorApps && Array.isArray(cloudMentorApps) && cloudMentorApps.length > 0) {
+          setMentorApps(cloudMentorApps);
+        }
+      } catch (err) {
+        console.warn('[Cloud Initial Sync Error]:', err);
+      }
+    };
+    fetchCloudData();
+  }, []);
+
   // Auth Actions
   const login = (email, password, role) => {
     const user = usersDb.find(u => u.email === email && u.password === password && u.role === role);

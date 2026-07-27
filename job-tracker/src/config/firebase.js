@@ -1,25 +1,18 @@
 /**
  * Firebase Database & Authentication Configuration
- * 
- * To activate real-time Firebase / Firestore cloud database:
- * 1. Go to https://console.firebase.google.com
- * 2. Create a new Firebase project and enable Firestore Database & Authentication.
- * 3. Copy your project credentials into `.env` (see `.env.example`).
+ * Active Project: trackerpro-app
  */
 
-// Fallback configuration object reading Vite environment variables
 export const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || ""
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyDIWZCoChlB7grTV8d9gxxRWRz8Ih0k62s",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "trackerpro-app.firebaseapp.com",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "trackerpro-app",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "trackerpro-app.firebasestorage.app",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "256002247485",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:256002247485:web:2db1c1ea76c51f94101354",
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-3WBLEMGLML"
 };
 
-export const isFirebaseConfigured = Boolean(
-  import.meta.env.VITE_FIREBASE_API_KEY && 
-  import.meta.env.VITE_FIREBASE_PROJECT_ID
-);
+export const isFirebaseConfigured = true;
 
-console.log(`[Database Engine] Firebase Configured: ${isFirebaseConfigured ? 'YES (Cloud Active)' : 'NO (Using Local Storage Fallback)'}`);
+console.log(`[Database Engine] Active Firebase Project: ${firebaseConfig.projectId} (Cloud Active)`);
