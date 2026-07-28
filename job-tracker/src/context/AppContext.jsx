@@ -179,12 +179,17 @@ export const AppProvider = ({ children }) => {
 
   // Application Actions (Applicant submitting for Job)
   const applyForJob = (jobId, applicantName) => {
-    const existing = applications.find(a => a.jobId === jobId && a.applicantName === applicantName);
+    const nameToUse = applicantName || currentUser?.name || currentUser?.username || 'User Demo';
+    const emailToUse = currentUser?.email || '';
+    const existing = applications.find(a => String(a.jobId) === String(jobId) && 
+      (a.applicantName === nameToUse || (emailToUse && a.applicantEmail === emailToUse) || (currentUser?.name && a.applicantName === currentUser.name))
+    );
     if (!existing) {
       setApplications(prev => [...prev, { 
         id: Date.now(), 
         jobId, 
-        applicantName: applicantName || currentUser?.name || 'User Demo', 
+        applicantName: nameToUse, 
+        applicantEmail: emailToUse,
         status: 'Applied', 
         interviewSchedule: '', 
         feedback: '' 
@@ -193,15 +198,15 @@ export const AppProvider = ({ children }) => {
   };
 
   const updateApplicationStatus = (appId, newStatus) => {
-    setApplications(prev => prev.map(app => app.id === appId ? { ...app, status: newStatus } : app));
+    setApplications(prev => prev.map(app => String(app.id) === String(appId) ? { ...app, status: newStatus } : app));
   };
 
   const updateApplicationDetails = (appId, updatedFields) => {
-    setApplications(prev => prev.map(app => app.id === appId ? { ...app, ...updatedFields } : app));
+    setApplications(prev => prev.map(app => String(app.id) === String(appId) ? { ...app, ...updatedFields } : app));
   };
 
   const deleteApplication = (id) => {
-    setApplications(prev => prev.filter(a => a.id !== id));
+    setApplications(prev => prev.filter(a => String(a.id) !== String(id)));
   };
 
   // Personal Tracker Actions

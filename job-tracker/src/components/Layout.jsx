@@ -112,41 +112,41 @@ const Layout = () => {
   };
 
   return (
-    <div className="flex h-screen bg-slate-950 text-slate-100 font-sans overflow-hidden">
+    <div className="flex h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans overflow-hidden">
       {/* Mobile Sidebar Overlay Backdrop */}
       {mobileOpen && (
         <div 
-          className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-40 lg:hidden cursor-pointer"
+          className="fixed inset-0 bg-slate-950/60 dark:bg-slate-950/80 backdrop-blur-md z-40 lg:hidden cursor-pointer"
           onClick={() => setMobileOpen(false)}
         />
       )}
 
       {/* Main Sidebar Navigation */}
-      <aside className={`
+      <aside className={`sidebar
         fixed lg:static top-0 bottom-0 left-0 z-50 h-full
-        w-72 bg-slate-900/95 border-r border-slate-800 flex flex-col justify-between
+        w-72 bg-white dark:bg-slate-900/95 border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between
         transition-transform duration-300 ease-in-out shadow-2xl backdrop-blur-xl
         ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
         {/* Brand Header */}
-        <div className="p-5 border-b border-slate-800/80 flex items-center justify-between">
+        <div className="p-5 border-b border-slate-200 dark:border-slate-800/80 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-600 via-teal-600 to-indigo-600 p-0.5 shadow-lg shadow-emerald-500/20">
-              <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center">
-                <Briefcase className="w-5 h-5 text-emerald-400" />
+              <div className="w-full h-full bg-slate-100 dark:bg-slate-950 rounded-[14px] flex items-center justify-center">
+                <Briefcase className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
               </div>
             </div>
             <div>
-              <h1 className="font-extrabold text-base tracking-tight text-white flex items-center gap-1">
-                TrackerPro <span className="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.2 rounded font-bold">2.0</span>
+              <h1 className="font-extrabold text-base tracking-tight text-slate-900 dark:text-white flex items-center gap-1">
+                TrackerPro <span className="text-[10px] bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 px-1.5 py-0.2 rounded font-bold">2.0</span>
               </h1>
-              <p className="text-[10px] text-slate-400 font-medium">Job & Internship Suite</p>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Job & Internship Suite</p>
             </div>
           </div>
 
           <button 
             onClick={() => setMobileOpen(false)}
-            className="lg:hidden p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-900"
+            className="lg:hidden p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -157,13 +157,13 @@ const Layout = () => {
           {/* Role-Based Panel Views */}
           {currentUser?.role === 'user' && (
             <>
-              <div className="px-3 pt-2 pb-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Applicant Hub</div>
+              <div className="px-3 pt-2 pb-1 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Applicant Hub</div>
               <NavLink 
                 to="/dashboard" 
                 onClick={() => setMobileOpen(false)}
                 className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
               >
-                <LayoutDashboard className="w-4 h-4 text-emerald-400" /> 
+                <LayoutDashboard className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> 
                 <span className="flex-1">Overview Dashboard</span>
               </NavLink>
               <NavLink 
@@ -171,7 +171,7 @@ const Layout = () => {
                 onClick={() => setMobileOpen(false)}
                 className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
               >
-                <FilePlus className="w-4 h-4 text-emerald-400" /> 
+                <FilePlus className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> 
                 <span className="flex-1">Log Application</span>
               </NavLink>
               <NavLink 
@@ -179,7 +179,7 @@ const Layout = () => {
                 onClick={() => setMobileOpen(false)}
                 className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
               >
-                <FileText className="w-4 h-4 text-emerald-400" /> 
+                <FileText className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> 
                 <span className="flex-1">Applications Tracker</span>
               </NavLink>
             </>
@@ -187,13 +187,13 @@ const Layout = () => {
 
           {currentUser?.role === 'employer' && (
             <>
-              <div className="px-3 pt-2 pb-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Recruiter Hub</div>
+              <div className="px-3 pt-2 pb-1 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Recruiter Hub</div>
               <NavLink 
                 to="/employer" 
                 onClick={() => setMobileOpen(false)}
                 className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
               >
-                <Briefcase className="w-4 h-4 text-emerald-400" /> 
+                <Briefcase className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> 
                 <span className="flex-1">Employer Console</span>
               </NavLink>
               <NavLink 
@@ -201,7 +201,7 @@ const Layout = () => {
                 onClick={() => setMobileOpen(false)}
                 className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
               >
-                <FileText className="w-4 h-4 text-emerald-400" /> 
+                <FileText className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> 
                 <span className="flex-1">Candidate Pipeline</span>
               </NavLink>
             </>
@@ -209,13 +209,13 @@ const Layout = () => {
 
           {currentUser?.role === 'mentor' && (
             <>
-              <div className="px-3 pt-2 pb-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">Mentorship Hub</div>
+              <div className="px-3 pt-2 pb-1 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Mentorship Hub</div>
               <NavLink 
                 to="/mentor" 
                 onClick={() => setMobileOpen(false)}
                 className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
               >
-                <GraduationCap className="w-4 h-4 text-emerald-400" /> 
+                <GraduationCap className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> 
                 <span className="flex-1">Mentorship Portal</span>
               </NavLink>
               <NavLink 
@@ -223,7 +223,7 @@ const Layout = () => {
                 onClick={() => setMobileOpen(false)}
                 className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
               >
-                <FileText className="w-4 h-4 text-emerald-400" /> 
+                <FileText className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> 
                 <span className="flex-1">Mentee Applications</span>
               </NavLink>
             </>
@@ -231,13 +231,13 @@ const Layout = () => {
 
           {currentUser?.role === 'admin' && (
             <>
-              <div className="px-3 pt-2 pb-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">System Control</div>
+              <div className="px-3 pt-2 pb-1 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">System Control</div>
               <NavLink 
                 to="/admin" 
                 onClick={() => setMobileOpen(false)}
                 className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
               >
-                <ShieldCheck className="w-4 h-4 text-emerald-400" /> 
+                <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> 
                 <span className="flex-1">Admin Panel</span>
               </NavLink>
               <NavLink 
@@ -245,7 +245,7 @@ const Layout = () => {
                 onClick={() => setMobileOpen(false)}
                 className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
               >
-                <FileText className="w-4 h-4 text-emerald-400" /> 
+                <FileText className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> 
                 <span className="flex-1">All Applications</span>
               </NavLink>
             </>
@@ -271,8 +271,8 @@ const Layout = () => {
                 <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-white dark:border-slate-900 rounded-full animate-pulse" />
               </div>
               <div className="overflow-hidden">
-                <p className="text-xs font-bold text-slate-900 dark:text-white truncate flex items-center gap-1 group-hover:text-emerald-500 transition-colors">
-                  {currentUser?.name || 'User'} <Edit2 className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <p className="text-xs font-bold text-slate-900 dark:text-white truncate flex items-center gap-1 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                  {currentUser?.username || currentUser?.name || 'User'} <Edit2 className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                 </p>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 capitalize truncate">{getRoleTitle(currentUser?.role)}</p>
               </div>
@@ -280,26 +280,26 @@ const Layout = () => {
 
             <button 
               onClick={handleLogout}
-              className="p-2 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 transition-all border border-rose-500/30 shrink-0 flex items-center gap-1 font-bold text-xs"
+              className="p-2 rounded-xl bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-500/20 transition-all border border-rose-200 dark:border-rose-500/30 shrink-0 flex items-center gap-1 font-bold text-xs"
               title="Sign Out"
             >
-              <LogOut className="w-4 h-4" />
+              <LogOut className="w-4 h-4 text-rose-500" />
             </button>
           </div>
         </div>
       </aside>
 
       {/* Main Content Area */}
-      <main className="main-content relative bg-slate-950 flex-1 flex flex-col h-full overflow-hidden">
+      <main className="main-content relative bg-slate-50 dark:bg-slate-950 flex-1 flex flex-col h-full overflow-hidden">
         {/* Topbar Navigation Bar */}
-        <header className="topbar h-16 border-b border-slate-800/80 px-4 sm:px-8 flex items-center justify-between shrink-0">
+        <header className="topbar h-16 border-b border-slate-200 dark:border-slate-800/80 px-4 sm:px-8 flex items-center justify-between shrink-0 bg-white/90 dark:bg-slate-950/80 backdrop-blur-md">
           <div className="flex items-center gap-3">
             <button 
               onClick={() => setMobileOpen(prev => !prev)}
-              className="lg:hidden p-2 rounded-xl bg-slate-900 border border-slate-800 text-emerald-400 hover:text-white hover:bg-slate-800 transition-all cursor-pointer shadow-md"
+              className="lg:hidden p-2 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-800 transition-all cursor-pointer shadow-sm"
               aria-label="Toggle Navigation Drawer"
             >
-              <Menu className="w-5 h-5 text-emerald-400" />
+              <Menu className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
             </button>
 
             <div className="flex items-center gap-2">
@@ -321,9 +321,9 @@ const Layout = () => {
               </button>
             )}
 
-            <div className="h-5 w-[1px] bg-slate-800 mx-1 hidden sm:block" />
+            <div className="h-5 w-[1px] bg-slate-200 dark:bg-slate-800 mx-1 hidden sm:block" />
 
-            {/* Clickable User Profile Badge */}
+            {/* Clickable User Profile Badge displaying Username */}
             <div 
               onClick={openProfileModal}
               className="flex items-center gap-2.5 cursor-pointer p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors group"
@@ -332,9 +332,9 @@ const Layout = () => {
               <div className="relative">
                 <div className="w-8 h-8 rounded-full overflow-hidden bg-emerald-600 text-white font-extrabold flex items-center justify-center text-xs shadow-md border border-emerald-400">
                   {currentUser?.avatarUrl ? (
-                    <img src={currentUser.avatarUrl} alt={currentUser.name} className="w-full h-full object-cover" />
+                    <img src={currentUser.avatarUrl} alt={currentUser?.username || currentUser?.name} className="w-full h-full object-cover" />
                   ) : (
-                    getInitial(currentUser?.name)
+                    getInitial(currentUser?.username || currentUser?.name)
                   )}
                 </div>
                 <div className="absolute -bottom-1 -right-1 bg-emerald-600 text-white p-0.5 rounded-full text-[9px] shadow-sm">
@@ -343,8 +343,8 @@ const Layout = () => {
               </div>
 
               <div className="text-right hidden sm:block">
-                <p className="text-xs font-bold text-slate-900 dark:text-slate-200 leading-none flex items-center gap-1 group-hover:text-emerald-500 transition-colors">
-                  {currentUser?.name} <Edit2 className="w-3 h-3 opacity-60" />
+                <p className="text-xs font-bold text-slate-900 dark:text-slate-200 leading-none flex items-center gap-1 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                  {currentUser?.username || currentUser?.name} <Edit2 className="w-3 h-3 opacity-60" />
                 </p>
                 <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium capitalize mt-0.5">{getRoleTitle(currentUser?.role)}</p>
               </div>
@@ -353,19 +353,19 @@ const Layout = () => {
             {/* Light / Dark Mode Toggle Button */}
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-amber-400 hover:text-amber-300 hover:bg-slate-800 transition-all"
+              className="p-2 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-amber-500 dark:text-amber-400 hover:bg-slate-200 dark:hover:bg-slate-800 transition-all cursor-pointer"
               title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
             >
               {theme === 'dark' ? (
                 <Sun className="w-4 h-4 text-amber-400" />
               ) : (
-                <Moon className="w-4 h-4 text-emerald-400" />
+                <Moon className="w-4 h-4 text-indigo-600" />
               )}
             </button>
 
             <button 
               onClick={handleLogout}
-              className="p-2 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 transition-all border border-rose-500/30"
+              className="p-2 rounded-xl bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-500/20 transition-all border border-rose-200 dark:border-rose-500/30"
               title="Sign Out"
             >
               <LogOut className="w-4 h-4" />

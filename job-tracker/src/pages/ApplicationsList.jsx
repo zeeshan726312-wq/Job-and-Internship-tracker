@@ -58,14 +58,29 @@ const ApplicationsList = () => {
     notes: ''
   });
 
-  const applicantName = currentUser?.name || 'user';
+  const isUserApp = (app) => {
+    if (!app || !currentUser) return false;
+    const cName = (currentUser.name || '').toLowerCase().trim();
+    const cUsername = (currentUser.username || '').toLowerCase().trim();
+    const cEmail = (currentUser.email || '').toLowerCase().trim();
+    
+    const appName = (app.applicantName || '').toLowerCase().trim();
+    const appEmail = (app.applicantEmail || '').toLowerCase().trim();
+
+    if (appEmail && cEmail && appEmail === cEmail) return true;
+    if (appName && (appName === cName || appName === cUsername || appName === cEmail)) return true;
+    if (currentUser.role === 'user' && (appName === 'user demo' || appName === 'user')) return true;
+    return false;
+  };
+
+  const applicantName = currentUser?.name || currentUser?.username || 'user';
 
   const safeApps = Array.isArray(applications) ? applications : [];
   const safePersonal = Array.isArray(personalApps) ? personalApps : [];
   const safeJobsList = Array.isArray(jobs) ? jobs : [];
 
-  const myApplications = safeApps.filter(app => app && (app.applicantName === applicantName || currentUser?.role === 'employer' || currentUser?.role === 'admin'));
-  const myPersonalApps = safePersonal.filter(app => app && (app.applicantName === applicantName || currentUser?.role === 'admin'));
+  const myApplications = safeApps.filter(app => app && (isUserApp(app) || currentUser?.role === 'employer' || currentUser?.role === 'admin'));
+  const myPersonalApps = safePersonal.filter(app => app && (isUserApp(app) || currentUser?.role === 'admin'));
 
   // Combine both sources into a unified list
   const combinedApps = [

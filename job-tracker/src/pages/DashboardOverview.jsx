@@ -34,10 +34,25 @@ const DashboardOverview = () => {
     }
   }, [currentUser, navigate]);
 
-  const applicantName = currentUser?.name || 'user';
+  const isUserApp = (app) => {
+    if (!app || !currentUser) return false;
+    const cName = (currentUser.name || '').toLowerCase().trim();
+    const cUsername = (currentUser.username || '').toLowerCase().trim();
+    const cEmail = (currentUser.email || '').toLowerCase().trim();
+    
+    const appName = (app.applicantName || '').toLowerCase().trim();
+    const appEmail = (app.applicantEmail || '').toLowerCase().trim();
 
-  const myApplications = (applications || []).filter(app => app.applicantName === applicantName);
-  const myPersonalApps = (personalApps || []).filter(app => app.applicantName === applicantName);
+    if (appEmail && cEmail && appEmail === cEmail) return true;
+    if (appName && (appName === cName || appName === cUsername || appName === cEmail)) return true;
+    if (currentUser.role === 'user' && (appName === 'user demo' || appName === 'user')) return true;
+    return false;
+  };
+
+  const applicantName = currentUser?.name || currentUser?.username || 'user';
+
+  const myApplications = (applications || []).filter(isUserApp);
+  const myPersonalApps = (personalApps || []).filter(isUserApp);
 
   const totalAppsCount = myApplications.length + myPersonalApps.length;
   const inReviewCount = myApplications.filter(a => a.status === 'Applied' || a.status === 'Pending').length + 

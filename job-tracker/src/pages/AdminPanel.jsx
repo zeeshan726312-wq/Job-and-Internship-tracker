@@ -187,6 +187,14 @@ const AdminPanel = () => {
           Jobs Directory ({jobs.length})
         </button>
         <button
+          onClick={() => setActiveTab('applications')}
+          className={`flex-1 min-w-[110px] py-2 text-xs font-bold rounded-xl transition-all ${
+            activeTab === 'applications' ? 'bg-emerald-600 text-white shadow-md keep-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+          }`}
+        >
+          Applications ({applications.length})
+        </button>
+        <button
           onClick={() => setActiveTab('hired')}
           className={`flex-1 min-w-[110px] py-2 text-xs font-bold rounded-xl transition-all ${
             activeTab === 'hired' ? 'bg-emerald-600 text-white shadow-md keep-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
@@ -200,7 +208,7 @@ const AdminPanel = () => {
             activeTab === 'mentor_approval' ? 'bg-emerald-600 text-white shadow-md keep-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
           }`}
         >
-          Mentorship Approvals
+          Mentorship ({mentorApps.length})
         </button>
       </div>
 
@@ -373,28 +381,83 @@ const AdminPanel = () => {
       {/* APPLICATIONS TAB */}
       {activeTab === 'applications' && (
         <div className="card bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-4">
-          <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <FileText className="w-5 h-5 text-emerald-500" /> All Candidate Applications ({applications.length})
-          </h3>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <FileText className="w-5 h-5 text-emerald-500" /> System Candidate Submissions ({applications.length})
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Administrators can change the status of any application directly (Applied, Shortlisted, Interview, Hired, Rejected).
+              </p>
+            </div>
+          </div>
+
           <div className="space-y-3">
-            {applications.map(app => (
-              <div key={app.id} className="p-4 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center justify-between">
-                <div>
-                  <h4 className="font-bold text-sm text-slate-900 dark:text-white">Applicant: {app.applicantName}</h4>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Status: <span className="font-bold text-emerald-600 dark:text-emerald-400">{app.status}</span></p>
-                </div>
-                <button
-                  onClick={() => deleteApplication(app.id)}
-                  className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors"
-                  title="Delete Submission Record"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            ))}
+            {applications.length === 0 ? (
+              <p className="text-slate-500 dark:text-slate-400 text-xs py-4 text-center font-medium">No application records found.</p>
+            ) : (
+              applications.map(app => {
+                const job = jobs.find(j => j.id === app.jobId);
+                return (
+                  <div key={app.id} className="p-4 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-bold text-sm text-slate-900 dark:text-white">
+                          Applicant: {app.applicantName}
+                        </h4>
+                        <span className={`text-[10px] px-2 py-0.5 rounded font-extrabold uppercase border ${
+                          app.status === 'Hired' || app.status === 'Offered' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30' :
+                          app.status === 'Shortlisted' ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30' :
+                          app.status === 'Interview' ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/30' :
+                          app.status === 'Rejected' ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30' :
+                          'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30'
+                        }`}>
+                          {app.status || 'Applied'}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-600 dark:text-slate-300 font-medium mt-1">
+                        Position: <span className="font-bold text-slate-900 dark:text-white">{job?.title || 'Platform Position'}</span> • Company: {job?.company || 'Employer'}
+                      </p>
+                      {app.interviewSchedule && (
+                        <p className="text-[11px] text-purple-600 dark:text-purple-400 font-semibold mt-0.5 flex items-center gap-1">
+                          <Video className="w-3 h-3" /> Interview: {app.interviewSchedule}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-3 shrink-0">
+                      {/* Status Selector Dropdown */}
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs text-slate-500 dark:text-slate-400 font-bold hidden sm:inline">Update Status:</span>
+                        <select 
+                          value={app.status || 'Applied'} 
+                          onChange={(e) => updateApplicationStatus(app.id, e.target.value)}
+                          className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs rounded-xl px-3 py-1.5 font-bold cursor-pointer focus:ring-2 focus:ring-emerald-500 outline-none shadow-sm"
+                        >
+                          <option value="Applied">Applied / Pending</option>
+                          <option value="Shortlisted">Shortlisted</option>
+                          <option value="Interview">Interview Stage</option>
+                          <option value="Hired">Hired / Offered</option>
+                          <option value="Rejected">Rejected</option>
+                        </select>
+                      </div>
+
+                      <button
+                        onClick={() => deleteApplication(app.id)}
+                        className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors border border-rose-500/20"
+                        title="Delete Submission Record"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       )}
+
       {/* HIRED CANDIDATES TAB */}
       {activeTab === 'hired' && (
         <div className="card bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-4">
@@ -403,12 +466,12 @@ const AdminPanel = () => {
           </h3>
           <div className="space-y-3">
             {applications.filter(a => a.status === 'Hired' || a.status === 'Shortlisted').length === 0 ? (
-              <p className="text-slate-500 dark:text-slate-400 text-xs py-4 text-center">No hired candidates recorded yet.</p>
+              <p className="text-slate-500 dark:text-slate-400 text-xs py-4 text-center">No hired or shortlisted candidates recorded yet.</p>
             ) : (
               applications.filter(a => a.status === 'Hired' || a.status === 'Shortlisted').map(app => {
                 const job = jobs.find(j => j.id === app.jobId);
                 return (
-                  <div key={app.id} className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl flex items-center justify-between">
+                  <div key={app.id} className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                       <h4 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
                         {app.applicantName} 
@@ -419,6 +482,21 @@ const AdminPanel = () => {
                       <p className="text-xs text-slate-600 dark:text-slate-300 font-medium mt-0.5">
                         Position: {job?.title || 'Job Listing'} • Company: {job?.company || 'Employer'}
                       </p>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-slate-500 dark:text-slate-400 font-bold">Admin Status:</span>
+                      <select 
+                        value={app.status || 'Hired'} 
+                        onChange={(e) => updateApplicationStatus(app.id, e.target.value)}
+                        className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white text-xs rounded-xl px-3 py-1.5 font-bold cursor-pointer focus:ring-2 focus:ring-emerald-500 outline-none shadow-sm"
+                      >
+                        <option value="Applied">Applied / Pending</option>
+                        <option value="Shortlisted">Shortlisted</option>
+                        <option value="Interview">Interview Stage</option>
+                        <option value="Hired">Hired / Offered</option>
+                        <option value="Rejected">Rejected</option>
+                      </select>
                     </div>
                   </div>
                 );

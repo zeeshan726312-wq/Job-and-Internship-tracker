@@ -1,6 +1,7 @@
 import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AppContext } from '../context/AppContext';
+import signinPic from '../../../Untitled design.png';
 import { 
   LogIn, 
   UserPlus, 
@@ -48,6 +49,7 @@ const AuthPage = () => {
   
   const [mobileNumber, setMobileNumber] = useState('');
   const [idCard, setIdCard] = useState('');
+  const [username, setUsername] = useState('');
 
   // Recovery Verification States
   const [verifyIdCard, setVerifyIdCard] = useState('');
@@ -77,6 +79,10 @@ const AuthPage = () => {
         setError(res.message || res.error || 'Invalid credentials or role selection.');
       }
     } else {
+      if (!username.trim()) {
+        setError('Please enter a Username / Display Name');
+        return;
+      }
       if (!validateGmail(email)) {
         setError('Please enter a valid Gmail address (must end with @gmail.com)');
         return;
@@ -94,7 +100,8 @@ const AuthPage = () => {
         email,
         password,
         role,
-        name: email.split('@')[0],
+        name: username.trim(),
+        username: username.trim(),
         mobile: mobileNumber,
         idCard: idCard,
       });
@@ -103,6 +110,7 @@ const AuthPage = () => {
         setIsLogin(true);
         setEmail('');
         setPassword('');
+        setUsername('');
         setMobileNumber('');
         setIdCard('');
       } else {
@@ -547,6 +555,18 @@ const AuthPage = () => {
         </button>
       </div>
 
+      {/* Full-Page Background Image (Spread ONLY on Sign In Page) */}
+      {isLogin && !isForgotPassword && (
+        <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+          <img 
+            src={signinPic} 
+            alt="Sign In Full Page Background" 
+            className="w-full h-full object-cover object-center scale-105 filter brightness-[0.6] contrast-[1.1] transition-all duration-700"
+          />
+          <div className="absolute inset-0 bg-gradient-to-br from-slate-950/80 via-slate-950/65 to-indigo-950/80 backdrop-blur-[1px]" />
+        </div>
+      )}
+
       {/* Background Ambient Overlay */}
       <div 
         className="fixed inset-0 pointer-events-none opacity-[0.25] bg-gradient-to-br from-indigo-900/40 via-slate-900 to-purple-950/40 z-0"
@@ -728,6 +748,24 @@ const AuthPage = () => {
               {/* Registration Extra Fields */}
               {!isLogin && (
                 <>
+                  {/* Username Field */}
+                  <div>
+                    <label className="form-label text-xs">Username / Display Name *</label>
+                    <div className="relative flex items-center">
+                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-10 flex items-center justify-center text-slate-400">
+                        <UserCheck className="w-4 h-4" />
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="e.g. Zeeshan Haider"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        className="input-field w-full !pl-11 py-2.5 text-sm bg-slate-950/80"
+                        required
+                      />
+                    </div>
+                  </div>
+
                   {/* Phone Number Field */}
                   <div>
                     <label className="form-label text-xs">Phone Number</label>
