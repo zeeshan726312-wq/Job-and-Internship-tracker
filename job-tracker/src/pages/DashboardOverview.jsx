@@ -88,7 +88,7 @@ const DashboardOverview = () => {
               <Sparkles className="w-3.5 h-3.5 text-emerald-200" /> Student Applicant Workspace
             </div>
             <h2 className="text-2xl md:text-3xl font-extrabold text-white keep-white tracking-tight">
-              Welcome back, {currentUser?.name || 'Applicant'}! 👋
+              Hi, {currentUser?.name || 'User'}
             </h2>
             <p className="text-emerald-100 text-sm max-w-xl leading-relaxed font-medium">
               Track your active job & internship submissions, monitor recruiter interviews, and accelerate your career journey.

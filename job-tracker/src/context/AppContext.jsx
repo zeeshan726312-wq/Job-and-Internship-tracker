@@ -47,9 +47,9 @@ const mockUsers = [
   { email: 'admin@gmail.com', password: 'admin123', role: 'admin', name: 'Admin Demo', mobile: '+923009988776', idCard: '12345-9988776-1' },
 ];
 
-const getStoredItem = (key, fallback) => {
+const getStoredItem = (key, fallback, storage = localStorage) => {
   try {
-    const item = localStorage.getItem(key);
+    const item = storage.getItem(key);
     return item ? JSON.parse(item) : fallback;
   } catch (err) {
     return fallback;
@@ -75,9 +75,22 @@ export const AppProvider = ({ children }) => {
     }
   }, [theme]);
 
-  // Auth State
-  const [currentUser, setCurrentUser] = useState(() => getStoredItem('currentUser', null));
-  const [usersDb, setUsersDb] = useState(() => getStoredItem('jt_users_db', mockUsers) || mockUsers);
+  // Auth State (Session-first for security, check localStorage ONLY if rememberMe is enabled)
+  const [currentUser, setCurrentUser] = useState(() => {
+    const sessionUser = getStoredItem('currentUser_session', null, sessionStorage);
+    if (sessionUser) return sessionUser;
+
+    const isRemembered = localStorage.getItem('jt_remember_me') === 'true';
+    if (isRemembered) {
+      return getStoredItem('currentUser', null, localStorage);
+    }
+    return null;
+  });
+
+  const [usersDb, setUsersDb] = useState(() => {
+    const stored = getStoredItem('jt_users_db', mockUsers);
+    return Array.isArray(stored) && stored.length > 0 ? stored : mockUsers;
+  });
   
   // Data State with LocalStorage initialization & safe array fallbacks
   const [jobs, setJobs] = useState(() => getStoredItem('jt_jobs', initialJobs) || initialJobs);
@@ -124,40 +137,53 @@ export const AppProvider = ({ children }) => {
   }, []);
 
   // Auth Actions
-  const login = (email, password, role) => {
-    const user = usersDb.find(u => u.email === email && u.password === password && u.role === role);
+  const login = (email, password, role, rememberMe = false) => {
+    const user = usersDb.find(u => u && u.email && u.email.toLowerCase() === (email || '').toLowerCase() && u.password === password && u.role === role);
     if (user) {
       setCurrentUser(user);
-      localStorage.setItem('currentUser', JSON.stringify(user));
+      sessionStorage.setItem('currentUser_session', JSON.stringify(user));
+      if (rememberMe) {
+        localStorage.setItem('currentUser', JSON.stringify(user));
+        localStorage.setItem('jt_remember_me', 'true');
+      } else {
+        localStorage.removeItem('currentUser');
+        localStorage.removeItem('jt_remember_me');
+      }
       return { success: true, user };
     }
     return { success: false, message: 'Invalid credentials or role selection.' };
   };
 
   const signup = (userData) => {
-    const existing = usersDb.find(u => u.email === userData.email);
+    const existing = usersDb.find(u => u && u.email && u.email.toLowerCase() === (userData.email || '').toLowerCase());
     if (existing) {
       return { success: false, message: 'Gmail address already registered.' };
     }
     const newUser = { ...userData };
     const updatedUsers = [...usersDb, newUser];
     setUsersDb(updatedUsers);
+    localStorage.setItem('jt_users_db', JSON.stringify(updatedUsers));
     dbService.syncCollection('jt_users_db', updatedUsers);
     return { success: true, user: newUser };
   };
 
   const resetPassword = (email, newPassword) => {
-    const user = usersDb.find(u => u.email === email);
+    const user = usersDb.find(u => u && u.email && u.email.toLowerCase() === (email || '').toLowerCase());
     if (!user) {
       return { success: false, message: 'Gmail address not found in system database.' };
     }
-    setUsersDb(prev => prev.map(u => u.email === email ? { ...u, password: newPassword } : u));
+    const updatedUsers = usersDb.map(u => (u && u.email && u.email.toLowerCase() === (email || '').toLowerCase()) ? { ...u, password: newPassword } : u);
+    setUsersDb(updatedUsers);
+    localStorage.setItem('jt_users_db', JSON.stringify(updatedUsers));
+    dbService.syncCollection('jt_users_db', updatedUsers);
     return { success: true, message: 'Password updated successfully! You can now sign in.' };
   };
 
   const logout = () => {
     setCurrentUser(null);
+    sessionStorage.removeItem('currentUser_session');
     localStorage.removeItem('currentUser');
+    localStorage.removeItem('jt_remember_me');
   };
 
   const deleteUser = (email) => {
@@ -289,11 +315,15 @@ export const AppProvider = ({ children }) => {
     if (!currentUser) return;
     const updatedUser = { ...currentUser, ...updatedFields };
     setCurrentUser(updatedUser);
-    localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+    sessionStorage.setItem('currentUser_session', JSON.stringify(updatedUser));
+    if (localStorage.getItem('jt_remember_me') === 'true') {
+      localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+    }
     
     setUsersDb(prev => {
       const updatedList = prev.map(u => u.email === currentUser.email ? { ...u, ...updatedFields } : u);
       localStorage.setItem('jt_users_db', JSON.stringify(updatedList));
+      dbService.syncCollection('jt_users_db', updatedList);
       return updatedList;
     });
   };

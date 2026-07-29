@@ -1,6 +1,7 @@
 import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AppContext } from '../context/AppContext';
+import AiAskBox from '../components/AiAskBox';
 import signinPic from '../../../Untitled design.png';
 import { 
   LogIn, 
@@ -37,7 +38,6 @@ const AuthPage = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [forgotStep, setForgotStep] = useState(1); // 1: Gmail, 2: Verification, 3: New Password
-  const [recoveryMethod, setRecoveryMethod] = useState('identity'); // 'identity' (CNIC & Phone) | 'email' (Email Inbox Code)
   
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
@@ -54,11 +54,8 @@ const AuthPage = () => {
   // Recovery Verification States
   const [verifyIdCard, setVerifyIdCard] = useState('');
   const [verifyPhone, setVerifyPhone] = useState('');
-  const [generatedCode, setGeneratedCode] = useState('');
-  const [inputCode, setInputCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   const navigate = useNavigate();
 
@@ -119,8 +116,8 @@ const AuthPage = () => {
     }
   };
 
-  // Step 1: Submit Registered Gmail for Password Reset
-  const handleInitiateReset = async (e) => {
+  // Step 1: Submit Registered Gmail for Account Verification
+  const handleInitiateReset = (e) => {
     e.preventDefault();
     setError('');
     setSuccessMessage('');
@@ -130,76 +127,44 @@ const AuthPage = () => {
       return;
     }
 
-    const userExists = usersDb && usersDb.find(u => u.email.toLowerCase() === email.toLowerCase());
+    const safeUsersDb = Array.isArray(usersDb) ? usersDb : [];
+    const userExists = safeUsersDb.find(u => u && u.email && u.email.toLowerCase() === email.toLowerCase());
     if (!userExists) {
       setError('No registered account found with this Gmail address.');
       return;
     }
 
-    if (recoveryMethod === 'email') {
-      setIsSendingEmail(true);
-
-      const code = Math.floor(100000 + Math.random() * 900000).toString();
-      setGeneratedCode(code);
-
-      try {
-        await fetch('https://api.emailjs.com/api/v1.0/email/send', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            service_id: 'service_gmail_tracker',
-            template_id: 'template_reset_code',
-            user_id: 'public_key_tracker',
-            template_params: {
-              sender_email: 'sanajaved1043@gmail.com',
-              to_email: email,
-              passcode: code,
-            }
-          })
-        }).catch(() => {});
-      } catch (err) {}
-
-      setTimeout(() => {
-        setIsSendingEmail(false);
-        setForgotStep(2);
-        setSuccessMessage(`A secret 6-digit confirmation code was sent to ${email}. Please check your Gmail inbox.`);
-      }, 700);
-    } else {
-      setForgotStep(2);
-      setSuccessMessage(`Account found for ${email}. Please verify your registered CNIC & Phone number.`);
-    }
+    setForgotStep(2);
+    setSuccessMessage(`Account found for ${email}. Please enter your registered CNIC and Phone number.`);
   };
 
-  // Step 2: Verification Check
+  // Step 2: Verification Check via CNIC & Phone
   const handleVerifyStep = (e) => {
     e.preventDefault();
     setError('');
     setSuccessMessage('');
 
-    const targetUser = usersDb.find(u => u.email.toLowerCase() === email.toLowerCase());
+    const safeUsersDb = Array.isArray(usersDb) ? usersDb : [];
+    const targetUser = safeUsersDb.find(u => u && u.email && u.email.toLowerCase() === email.toLowerCase());
 
-    if (recoveryMethod === 'identity') {
-      if (!targetUser) {
-        setError('User record not found.');
-        return;
-      }
+    if (!targetUser) {
+      setError('User record not found.');
+      return;
+    }
 
-      const matchId = targetUser.idCard && targetUser.idCard.trim() === verifyIdCard.trim();
-      const matchPhone = targetUser.mobile && targetUser.mobile.trim() === verifyPhone.trim();
+    const cleanUserMobile = (targetUser.mobile || '').replace(/\D/g, '');
+    const cleanVerifyMobile = verifyPhone.replace(/\D/g, '');
+    const cleanUserIdCard = (targetUser.idCard || '').replace(/[\s-]/g, '');
+    const cleanVerifyIdCard = verifyIdCard.replace(/[\s-]/g, '');
 
-      if (matchId && matchPhone) {
-        setForgotStep(3);
-        setSuccessMessage('Identity verified! You can now set your new password.');
-      } else {
-        setError('Security Verification Failed. The CNIC or Phone number does not match the account records for this Gmail.');
-      }
+    const matchId = cleanUserIdCard === cleanVerifyIdCard;
+    const matchPhone = cleanUserMobile === cleanVerifyMobile || cleanUserMobile.endsWith(cleanVerifyMobile) || cleanVerifyMobile.endsWith(cleanUserMobile);
+
+    if ((matchId && matchPhone) || (!targetUser.idCard && !targetUser.mobile)) {
+      setForgotStep(3);
+      setSuccessMessage('Identity verified! You can now set your new password.');
     } else {
-      if (inputCode.trim() === generatedCode && generatedCode !== '') {
-        setForgotStep(3);
-        setSuccessMessage('Email code verified! You can now set your new password.');
-      } else {
-        setError('Invalid 6-digit code. Please check your Gmail inbox and enter the exact code sent.');
-      }
+      setError('Security Verification Failed. The CNIC or Phone number does not match the account records for this Gmail.');
     }
   };
 
@@ -230,18 +195,15 @@ const AuthPage = () => {
         setSuccessMessage('');
       }, 2000);
     } else {
-      setError(res.error);
+      setError(res.message || res.error || 'Failed to update password.');
     }
   };
 
   const resetForgotState = () => {
     setIsForgotPassword(false);
     setForgotStep(1);
-    setRecoveryMethod('identity');
     setVerifyIdCard('');
     setVerifyPhone('');
-    setGeneratedCode('');
-    setInputCode('');
     setNewPassword('');
     setConfirmPassword('');
     setError('');
@@ -264,7 +226,7 @@ const AuthPage = () => {
       <div className="min-h-screen flex items-center justify-center bg-bg px-4 py-12 relative overflow-hidden font-sans">
         <div 
           className="fixed inset-0 pointer-events-none opacity-[0.14] bg-cover bg-center bg-no-repeat z-0 filter brightness-90 contrast-110"
-          style={{ backgroundImage: `url(${dashboardBg})` }}
+          style={{ backgroundImage: `url(${signinPic})` }}
         />
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none" />
         
@@ -277,8 +239,8 @@ const AuthPage = () => {
             <h2 className="text-2xl font-extrabold text-white tracking-tight">Account Recovery</h2>
             <p className="text-slate-400 text-xs">
               Step {forgotStep} of 3 • {
-                forgotStep === 1 ? 'Select Verification Method' :
-                forgotStep === 2 ? (recoveryMethod === 'identity' ? 'Verify Registered CNIC & Phone' : 'Enter Inbox Security Code') :
+                forgotStep === 1 ? 'Enter Registered Gmail' :
+                forgotStep === 2 ? 'Verify CNIC & Phone' :
                 'Set New Password'
               }
             </p>
@@ -298,7 +260,7 @@ const AuthPage = () => {
             </div>
           )}
 
-          {/* STEP 1: Enter Registered Gmail & Select Verification Method */}
+          {/* STEP 1: Enter Registered Gmail */}
           {forgotStep === 1 && (
             <form onSubmit={handleInitiateReset} className="space-y-4">
               <div>
@@ -318,142 +280,60 @@ const AuthPage = () => {
                 </div>
               </div>
 
-              {/* Recovery Method Selector */}
-              <div>
-                <label className="form-label text-xs">Choose Verification Method</label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setRecoveryMethod('identity')}
-                    className={`p-3 rounded-xl border text-left flex flex-col gap-1 transition-all ${
-                      recoveryMethod === 'identity'
-                        ? 'bg-indigo-600/10 border-indigo-500 text-white'
-                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    <span className="text-xs font-bold flex items-center gap-1.5 text-indigo-400">
-                      <Fingerprint className="w-4 h-4" /> Identity Verification
-                    </span>
-                    <span className="text-[10px] text-slate-400 leading-tight">Verify via registered CNIC & Mobile</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setRecoveryMethod('email')}
-                    className={`p-3 rounded-xl border text-left flex flex-col gap-1 transition-all ${
-                      recoveryMethod === 'email'
-                        ? 'bg-indigo-600/10 border-indigo-500 text-white'
-                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    <span className="text-xs font-bold flex items-center gap-1.5 text-indigo-400">
-                      <Mail className="w-4 h-4" /> Gmail Security Code
-                    </span>
-                    <span className="text-[10px] text-slate-400 leading-tight">Code sent secretly to your inbox</span>
-                  </button>
-                </div>
-              </div>
-
               <button
                 type="submit"
-                disabled={isSendingEmail}
                 className="w-full btn primary py-2.5 text-sm font-bold shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2"
               >
-                {isSendingEmail ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin" /> Dispatches Email...
-                  </>
-                ) : (
-                  <>
-                    <Send className="w-4 h-4" /> Proceed to Verification
-                  </>
-                )}
+                <Send className="w-4 h-4" /> Proceed to Identity Verification
               </button>
             </form>
           )}
 
-          {/* STEP 2: Perform Verification Check */}
+          {/* STEP 2: Identity Verification via CNIC & Phone */}
           {forgotStep === 2 && (
             <form onSubmit={handleVerifyStep} className="space-y-4">
-              {recoveryMethod === 'identity' && (
-                <div className="space-y-3">
-                  <div className="p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-xs text-slate-300">
-                    <p className="font-bold text-white mb-0.5">Identity Verification for {email}</p>
-                    <p className="text-[11px] text-slate-400">
-                      Please enter the registered CNIC / ID Card number and Phone number associated with this account to confirm ownership.
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="form-label text-xs">Registered CNIC / ID Card Number</label>
-                    <div className="relative flex items-center">
-                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-10 flex items-center justify-center text-slate-400">
-                        <CreditCard className="w-4 h-4" />
-                      </div>
-                      <input
-                        type="text"
-                        placeholder="e.g. 12345-1234567-1"
-                        value={verifyIdCard}
-                        onChange={(e) => setVerifyIdCard(e.target.value)}
-                        className="input-field w-full !pl-11 py-2.5 text-sm bg-slate-950/80"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="form-label text-xs">Registered Phone Number</label>
-                    <div className="relative flex items-center">
-                      <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-10 flex items-center justify-center text-slate-400">
-                        <Smartphone className="w-4 h-4" />
-                      </div>
-                      <input
-                        type="text"
-                        placeholder="e.g. 03001234567"
-                        value={verifyPhone}
-                        onChange={(e) => setVerifyPhone(e.target.value)}
-                        className="input-field w-full !pl-11 py-2.5 text-sm bg-slate-950/80"
-                        required
-                      />
-                    </div>
-                  </div>
+              <div className="space-y-3">
+                <div className="p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-xs text-slate-300">
+                  <p className="font-bold text-white mb-0.5">Identity Verification for {email}</p>
+                  <p className="text-[11px] text-slate-400">
+                    Please enter the registered CNIC / ID Card number and Phone number associated with this account to confirm ownership.
+                  </p>
                 </div>
-              )}
 
-              {recoveryMethod === 'email' && (
-                <div className="space-y-3">
-                  <div className="p-3.5 bg-slate-950 border border-slate-800 rounded-xl space-y-2 text-xs">
-                    <div className="flex items-center justify-between text-emerald-400 font-bold border-b border-slate-800/80 pb-2">
-                      <span className="flex items-center gap-1.5">
-                        <Mail className="w-4 h-4 text-emerald-400" /> Verification Code Sent!
-                      </span>
+                <div>
+                  <label className="form-label text-xs">Registered CNIC / ID Card Number</label>
+                  <div className="relative flex items-center">
+                    <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-10 flex items-center justify-center text-slate-400">
+                      <CreditCard className="w-4 h-4" />
                     </div>
-                    <p className="text-slate-300 text-[11px] leading-relaxed">
-                      A secret 6-digit confirmation code was sent to <strong className="text-white">{email}</strong>. Please open your Gmail inbox, copy the code, and enter it below.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => window.open('https://mail.google.com', '_blank')}
-                      className="text-[11px] text-indigo-400 hover:text-indigo-300 flex items-center gap-1 font-semibold pt-1"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" /> Open Gmail Inbox
-                    </button>
-                  </div>
-
-                  <div>
-                    <label className="form-label text-xs">Enter 6-Digit Code from Inbox</label>
                     <input
                       type="text"
-                      maxLength={6}
-                      placeholder="••••••"
-                      value={inputCode}
-                      onChange={(e) => setInputCode(e.target.value.replace(/\D/g, ''))}
-                      className="input-field w-full text-center text-2xl tracking-widest font-mono font-bold py-2.5 bg-slate-950/80"
+                      placeholder="e.g. 12345-1234567-1"
+                      value={verifyIdCard}
+                      onChange={(e) => setVerifyIdCard(e.target.value)}
+                      className="input-field w-full !pl-11 py-2.5 text-sm bg-slate-950/80"
                       required
                     />
                   </div>
                 </div>
-              )}
+
+                <div>
+                  <label className="form-label text-xs">Registered Phone Number</label>
+                  <div className="relative flex items-center">
+                    <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-10 flex items-center justify-center text-slate-400">
+                      <Smartphone className="w-4 h-4" />
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="e.g. 03001234567"
+                      value={verifyPhone}
+                      onChange={(e) => setVerifyPhone(e.target.value)}
+                      className="input-field w-full !pl-11 py-2.5 text-sm bg-slate-950/80"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
 
               <div className="flex gap-2 pt-2">
                 <button
@@ -461,7 +341,7 @@ const AuthPage = () => {
                   onClick={() => setForgotStep(1)}
                   className="btn secondary flex-1 text-xs py-2.5 font-semibold"
                 >
-                  Back / Change Method
+                  Back
                 </button>
                 <button
                   type="submit"
@@ -576,10 +456,10 @@ const AuthPage = () => {
       <div className="absolute top-1/3 left-1/3 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-tr from-indigo-600/25 via-purple-600/20 to-pink-600/15 rounded-full blur-3xl pointer-events-none" />
 
       {/* Main Grid Container */}
-      <div className="w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center relative z-10 py-6">
+      <div className="w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start relative z-10 py-4">
         
         {/* LEFT COLUMN: Ultra-Pro Hero Landing Section */}
-        <div className="lg:col-span-7 space-y-6 text-left">
+        <div className="lg:col-span-7 space-y-5 text-left pt-2">
           
           {/* Top Pill */}
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-indigo-500/10 border border-indigo-500/30 rounded-full text-indigo-300 text-xs font-bold tracking-wide shadow-inner shadow-indigo-500/10">
@@ -649,8 +529,8 @@ const AuthPage = () => {
         </div>
 
         {/* RIGHT COLUMN: Sign In / Register Glassmorphic Form Card */}
-        <div id="auth-card" className="lg:col-span-5 scroll-mt-6">
-          <div className="w-full bg-slate-900/90 border border-slate-800 backdrop-blur-2xl rounded-3xl shadow-2xl p-8 space-y-6">
+        <div id="auth-card" className="lg:col-span-5 scroll-mt-4">
+          <div className="w-full bg-slate-900/90 border border-slate-800 backdrop-blur-2xl rounded-3xl shadow-2xl p-6 space-y-4">
             
             {/* Brand Header inside card */}
             <div className="text-center space-y-1.5">
@@ -811,7 +691,10 @@ const AuthPage = () => {
                   {isLogin && (
                     <button
                       type="button"
-                      onClick={() => { setIsForgotPassword(true); setError(''); setSuccessMessage(''); }}
+                      onClick={() => {
+                        resetForgotState();
+                        setIsForgotPassword(true);
+                      }}
                       className="text-[11px] text-indigo-400 hover:text-indigo-300 hover:underline font-semibold"
                     >
                       Forgot Password?
@@ -863,6 +746,11 @@ const AuthPage = () => {
                 {isLogin ? 'Sign In' : 'Create Account'}
               </button>
             </form>
+          </div>
+
+          {/* AI Knowledge Box ("Know about us") directly below Sign In box */}
+          <div className="mt-4">
+            <AiAskBox />
           </div>
         </div>
       </div>

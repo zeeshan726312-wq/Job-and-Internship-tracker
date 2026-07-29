@@ -49,10 +49,11 @@ The application features a role-based access control system supporting 4 distinc
 
 ## 4. Key Modules & Features Implemented So Far
 
-### 4.1 Authentication & Profile Module (`AuthPage.jsx`)
+### 4.1 Authentication & Profile Module (`AuthPage.jsx` & `AiAskBox.jsx`)
 - **Multi-Role Login & Registration:** Dedicated form with role selection, full name, mobile number, and national ID fields.
-- **Password Reset Workflow:** Built-in account recovery allowing password reset via verified email.
-- **Remember Me Functionality:** Session persistence using `localStorage`.
+- **Password Reset Workflow:** Built-in account recovery allowing password reset via verified email or identity.
+- **Remember Me Functionality:** Session persistence using `localStorage` & Firebase Authentication.
+- **Interactive AI Assistant ("Know About Us"):** Built-in intelligent chatbot trained on Founder details (Zeeshan Haider), Faculty Supervisor (Sana Farooq - COMSATS Sahiwal), Site Supervisor (Muhammad Usman - Zynvex Solutions), Zynvex Internship ID (`ZYNVEX-CERT-0299`), Tech Stack, and 4 platform dashboards.
 
 ### 4.2 Navigation & Layout (`Layout.jsx` & `ProtectedRoute.jsx`)
 - **Responsive Header Navigation:** Displays active page, logged-in user profile, role badge, and mobile drawer menu.
