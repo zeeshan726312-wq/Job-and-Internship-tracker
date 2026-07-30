@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AppContext } from '../context/AppContext';
 import AiAskBox from '../components/AiAskBox';
@@ -22,12 +22,8 @@ import {
   Briefcase,
   GraduationCap,
   Send,
-  ExternalLink,
-  RefreshCw,
   ShieldAlert,
-  Fingerprint,
   ArrowRight,
-  ChevronRight,
   Star,
   Sun,
   Moon

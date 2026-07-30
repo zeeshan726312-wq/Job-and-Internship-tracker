@@ -2,7 +2,7 @@ import { firebaseConfig } from '../config/firebase';
 
 /**
  * Unified Firebase Firestore REST Cloud Database Service
- * Persists data to Firebase Firestore Cloud + LocalStorage for instant multi-device sync worldwide.
+ * Real-time bidirectional data persistence across devices & panels via Firebase Firestore Cloud REST API.
  */
 
 const FIREBASE_REST_BASE = `https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents/tracker_data`;
@@ -10,21 +10,27 @@ const API_KEY = firebaseConfig.apiKey;
 
 export const dbService = {
   getProvider() {
-    return 'Firebase Firestore Cloud REST';
+    return 'Firebase Firestore Cloud REST API';
   },
 
-  // Write data to LocalStorage + Firebase Firestore Cloud
+  // Write data to LocalStorage + Firebase Firestore Cloud REST API
   async setItem(key, data) {
     try {
-      // 1. Save to local storage for zero latency
-      localStorage.setItem(key, JSON.stringify(data));
+      if (data === undefined || data === null) return { success: false, error: 'Data is null' };
 
-      // 2. Sync asynchronously to Firebase Firestore Cloud API
-      const url = `${FIREBASE_REST_BASE}/${key}?updateMask.fieldPaths=json_data&key=${API_KEY}`;
+      // 1. Save locally for zero-latency local fallback
+      const jsonStr = JSON.stringify(data);
+      localStorage.setItem(key, jsonStr);
+
+      // 2. Sync to Firebase Firestore Cloud API
+      const url = `${FIREBASE_REST_BASE}/${key}?key=${API_KEY}`;
       const payload = {
         fields: {
           json_data: {
-            stringValue: JSON.stringify(data)
+            stringValue: jsonStr
+          },
+          updatedAt: {
+            stringValue: new Date().toISOString()
           }
         }
       };
@@ -36,35 +42,39 @@ export const dbService = {
       });
 
       if (!res.ok) {
-        console.warn('[Firebase Cloud Sync HTTP Error]:', res.status, await res.text());
+        const errorText = await res.text();
+        console.warn(`[Firebase Cloud Sync Error] Key: ${key}, Status: ${res.status}`, errorText);
+        return { success: false, cloudSynced: false, error: errorText };
       }
 
-      return { success: true };
+      console.log(`[Firebase Cloud Sync Success] Key: ${key} synced to Firestore.`);
+      return { success: true, cloudSynced: true };
     } catch (err) {
       console.error(`[dbService] Error setting ${key}:`, err);
-      return { success: false, error: err.message };
+      return { success: false, cloudSynced: false, error: err.message };
     }
   },
 
   // Read data from Firebase Firestore Cloud with LocalStorage fallback
-  async getItem(key, fallback) {
+  async getItem(key, fallback = []) {
     try {
-      // 1. Try reading local storage first for speed
       const local = localStorage.getItem(key);
-      let localData = local ? JSON.parse(local) : null;
+      const localData = local ? JSON.parse(local) : null;
 
-      // 2. Fetch latest live cloud data from Firebase Firestore REST API
+      // Fetch latest live cloud data from Firebase Firestore REST API
       const url = `${FIREBASE_REST_BASE}/${key}?key=${API_KEY}`;
-      const response = await fetch(url);
+      const response = await fetch(url, { cache: 'no-store' });
       
       if (response.ok) {
         const cloudResult = await response.json();
         const jsonString = cloudResult?.fields?.json_data?.stringValue;
         if (jsonString) {
           const cloudData = JSON.parse(jsonString);
-          // Sync back to local storage
-          localStorage.setItem(key, JSON.stringify(cloudData));
-          return cloudData;
+          if (Array.isArray(cloudData)) {
+            // Cache back to local storage
+            localStorage.setItem(key, JSON.stringify(cloudData));
+            return cloudData;
+          }
         }
       }
 
@@ -76,8 +86,36 @@ export const dbService = {
     }
   },
 
+  // Fetch all collections from cloud in parallel
+  async fetchAllCollections() {
+    const keys = [
+      'jt_jobs',
+      'jt_applications',
+      'jt_personal_apps',
+      'jt_users_db',
+      'jt_courses',
+      'jt_mentorships',
+      'jt_mentor_apps'
+    ];
+
+    const results = {};
+    await Promise.all(
+      keys.map(async (key) => {
+        try {
+          const data = await this.getItem(key, null);
+          if (data && Array.isArray(data)) {
+            results[key] = data;
+          }
+        } catch (e) {
+          console.warn(`[dbService] fetchAllCollections failed for ${key}`, e);
+        }
+      })
+    );
+    return results;
+  },
+
   // Sync collection helper
   syncCollection(key, data) {
-    this.setItem(key, data);
+    return this.setItem(key, data);
   }
 };

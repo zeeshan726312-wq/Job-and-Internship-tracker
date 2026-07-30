@@ -1,28 +1,25 @@
-import React, { useContext, useState } from 'react';
+import { useContext, useState } from 'react';
 import { AppContext } from '../context/AppContext';
 import { 
-  PlusCircle, 
   MessageSquare, 
   Briefcase, 
   Users, 
   Calendar, 
   CheckCircle2, 
-  Clock, 
   Video, 
-  XCircle, 
   Building2,
   Trash2,
-  Sparkles,
-  Send,
   UserCheck,
-  GraduationCap
+  GraduationCap,
+  Sparkles,
+  BookOpen,
+  ShieldCheck
 } from 'lucide-react';
 
 const EmployerPanel = () => {
   const context = useContext(AppContext) || {};
   const { 
     jobs = [], 
-    addJob = () => {}, 
     deleteJob = () => {}, 
     applications = [], 
     updateApplicationStatus = () => {}, 
@@ -35,40 +32,18 @@ const EmployerPanel = () => {
   
   const employerCompany = currentUser?.name || 'Employer Demo';
 
-  const [newJob, setNewJob] = useState({ 
-    title: '', 
-    company: employerCompany, 
-    type: 'Job', 
-    status: 'Open',
-    deadline: '',
-    requirements: ''
-  });
-
-  const [postSuccess, setPostSuccess] = useState(false);
+  const [trainingOffers, setTrainingOffers] = useState({});
+  const [offerSuccessMsg, setOfferSuccessMsg] = useState('');
 
   // State for Interview/Feedback Modal
   const [editingApp, setEditingApp] = useState(null);
   const [interviewDate, setInterviewDate] = useState('');
   const [feedback, setFeedback] = useState('');
 
-  const handlePostJob = (e) => {
-    e.preventDefault();
-    if (newJob.title && newJob.deadline && newJob.requirements) {
-      addJob({
-        ...newJob,
-        company: newJob.company || employerCompany
-      });
-      setNewJob({ 
-        title: '', 
-        company: employerCompany, 
-        type: 'Job', 
-        status: 'Open', 
-        deadline: '', 
-        requirements: '' 
-      });
-      setPostSuccess(true);
-      setTimeout(() => setPostSuccess(false), 3000);
-    }
+  const handleOfferTraining = (jobId, jobTitle) => {
+    setTrainingOffers(prev => ({ ...prev, [jobId]: true }));
+    setOfferSuccessMsg(`Training offer registered for "${jobTitle}"! Students and Admins will see ${employerCompany} as a training partner.`);
+    setTimeout(() => setOfferSuccessMsg(''), 3000);
   };
 
   const handleSaveDetails = (e) => {
@@ -94,9 +69,8 @@ const EmployerPanel = () => {
   const safeApps = Array.isArray(applications) ? applications : [];
   const safeMentorApps = Array.isArray(mentorApps) ? mentorApps : [];
 
-  const companyJobs = safeJobs.filter(j => j && (j.company === employerCompany || safeJobs.length <= 3));
-  const companyJobIds = companyJobs.map(j => j?.id).filter(Boolean);
-  const relevantApplications = safeApps.filter(app => app && (companyJobIds.includes(app.jobId) || safeApps.length <= 5));
+  const companyJobs = safeJobs.filter(j => j && (j.company === employerCompany || j.postedBy === employerCompany));
+  const relevantApplications = safeApps;
   const companyMentorApps = safeMentorApps.filter(m => m && companyJobs.some(j => j?.id === m.jobId));
 
   return (
@@ -114,7 +88,7 @@ const EmployerPanel = () => {
               Recruiter Command Hub ({employerCompany})
             </h2>
             <p className="text-emerald-100 text-xs mt-1 font-medium">
-              Post new job/internship listings, review candidate submissions, and schedule interviews.
+              Post job/internship listings, view Admin opportunities to offer employer training, and schedule candidate interviews.
             </p>
           </div>
         </div>
@@ -124,11 +98,11 @@ const EmployerPanel = () => {
       <div className="stats-grid grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="stat-card bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl shadow-sm">
           <div className="flex justify-between items-center">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Active Positions</h4>
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Company Positions</h4>
             <Briefcase className="w-5 h-5 text-amber-500 opacity-90" />
           </div>
           <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white mt-1">{companyJobs.length}</h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">Open Listings</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">Open Company Listings</p>
         </div>
 
         <div className="stat-card bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl shadow-sm">
@@ -151,85 +125,40 @@ const EmployerPanel = () => {
       </div>
 
       <div className="grid-2">
-        {/* Post Job Form Card */}
+        {/* Admin Job Posting Policy Info Card */}
         <div className="card bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-4">
-          <h3 className="flex items-center gap-2 text-slate-900 dark:text-white font-bold text-base">
-            <PlusCircle className="w-5 h-5 text-emerald-500" /> Post Opportunity Listing
-          </h3>
+          <div className="flex items-center justify-between">
+            <h3 className="flex items-center gap-2 text-slate-900 dark:text-white font-bold text-base">
+              <ShieldCheck className="w-5 h-5 text-emerald-500" /> Platform Listing Management
+            </h3>
+            <span className="text-[11px] font-bold px-2.5 py-1 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 rounded-full">
+              Admin Exclusive Posting
+            </span>
+          </div>
 
-          {postSuccess && (
-            <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 rounded-xl text-xs font-semibold flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4" /> Position published successfully!
+          <div className="p-4 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-xl space-y-2 text-xs">
+            <p className="font-semibold text-slate-900 dark:text-white">
+              Official Job Posting Policy:
+            </p>
+            <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
+              All official jobs and internship opportunities are verified and published exclusively by System Administrators to ensure compliance and quality for all candidate applicants.
+            </p>
+            <div className="pt-2 text-slate-500 dark:text-slate-400 font-medium flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-indigo-500 shrink-0" />
+              <span>Employers can review active listings below, manage incoming candidate applications, and schedule candidate interviews.</span>
             </div>
-          )}
-
-          <form onSubmit={handlePostJob} className="space-y-4">
-            <div>
-              <label className="form-label text-xs font-bold text-slate-700 dark:text-slate-300">Job Title *</label>
-              <input
-                type="text"
-                value={newJob.title}
-                onChange={(e) => setNewJob({ ...newJob, title: e.target.value })}
-                placeholder="e.g. Senior React Developer"
-                className="input-field w-full text-xs bg-white dark:bg-slate-950/80 border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white"
-                required
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="form-label text-xs font-bold text-slate-700 dark:text-slate-300">Category</label>
-                <select
-                  value={newJob.type}
-                  onChange={(e) => setNewJob({ ...newJob, type: e.target.value })}
-                  className="form-select text-xs py-2 bg-white dark:bg-slate-950/80 border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white"
-                >
-                  <option value="Job">Full-time Job</option>
-                  <option value="Internship">Internship Program</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="form-label text-xs font-bold text-slate-700 dark:text-slate-300">Deadline *</label>
-                <input
-                  type="date"
-                  value={newJob.deadline}
-                  onChange={(e) => setNewJob({ ...newJob, deadline: e.target.value })}
-                  className="input-field w-full text-xs bg-white dark:bg-slate-950/80 border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white"
-                  required
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="form-label text-xs font-bold text-slate-700 dark:text-slate-300">Requirements & Description *</label>
-              <textarea
-                value={newJob.requirements}
-                onChange={(e) => setNewJob({ ...newJob, requirements: e.target.value })}
-                placeholder="Key skills, qualifications, and responsibilities..."
-                className="form-textarea text-xs bg-white dark:bg-slate-950/80 border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white min-h-[90px]"
-                required
-              />
-            </div>
-
-            <button
-              type="submit"
-              className="w-full btn bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 text-xs font-bold shadow-lg shadow-emerald-500/20 keep-white border-0"
-            >
-              Publish Opportunity Listing
-            </button>
-          </form>
+          </div>
         </div>
 
-        {/* Existing Posted Jobs List */}
+        {/* Existing Company Posted Jobs List */}
         <div className="card bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-4">
           <h3 className="flex items-center gap-2 text-slate-900 dark:text-white font-bold text-base">
-            <Briefcase className="w-5 h-5 text-emerald-500" /> Published Opportunities ({companyJobs.length})
+            <Briefcase className="w-5 h-5 text-emerald-500" /> Published Company Listings ({companyJobs.length})
           </h3>
 
           <div className="list max-h-[360px] overflow-y-auto space-y-3 pr-1">
             {companyJobs.length === 0 ? (
-              <p className="text-slate-500 dark:text-slate-400 text-xs py-8 text-center">No active listings created yet.</p>
+              <p className="text-slate-500 dark:text-slate-400 text-xs py-8 text-center">No active listings created by {employerCompany} yet.</p>
             ) : (
               companyJobs.map(job => (
                 <div key={job.id} className="p-4 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center justify-between">
@@ -253,6 +182,81 @@ const EmployerPanel = () => {
               ))
             )}
           </div>
+        </div>
+      </div>
+
+      {/* ALL PLATFORM & ADMIN OPPORTUNITIES SECTION */}
+      <div className="card bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="flex items-center gap-2 text-slate-900 dark:text-white font-bold text-base">
+            <Sparkles className="w-5 h-5 text-indigo-500" /> All Platform & Admin Opportunities ({safeJobs.length})
+          </h3>
+          <span className="text-xs text-indigo-600 dark:text-indigo-400 font-bold bg-indigo-500/10 border border-indigo-500/30 px-3 py-1 rounded-full">
+            Offer Employer Training
+          </span>
+        </div>
+        <p className="text-xs text-slate-500 dark:text-slate-400">
+          Employers can review all jobs posted by Admin and offer employer training, teach applicant cohorts, or apply to partner for candidates.
+        </p>
+
+        {offerSuccessMsg && (
+          <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 rounded-xl text-xs font-semibold flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4" /> {offerSuccessMsg}
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {safeJobs.length === 0 ? (
+            <p className="text-slate-500 dark:text-slate-400 text-xs py-4 text-center col-span-2">No platform listings found.</p>
+          ) : (
+            safeJobs.map(job => {
+              const isOffered = trainingOffers[job.id];
+              const isAdminJob = job.postedBy === 'Admin' || job.company === 'System Admin';
+              return (
+                <div key={job.id} className="p-4 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-xl space-y-3 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                        {job.title}
+                        <span className="text-[10px] px-2 py-0.5 rounded font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+                          {job.type}
+                        </span>
+                      </h4>
+                      {isAdminJob ? (
+                        <span className="text-[10px] px-2 py-0.5 rounded font-extrabold uppercase bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                          Admin Created
+                        </span>
+                      ) : (
+                        <span className="text-[10px] px-2 py-0.5 rounded font-bold uppercase bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                          {job.company}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">Deadline: {job.deadline || 'N/A'}</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-300 mt-2 line-clamp-2">{job.requirements}</p>
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2">
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                      {isOffered ? '✓ Training Partner Attached' : 'Open for Teaching & Hiring'}
+                    </span>
+                    <button
+                      onClick={() => handleOfferTraining(job.id, job.title)}
+                      className={`btn py-1.5 px-3 text-xs font-bold flex items-center gap-1.5 ${
+                        isOffered
+                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 cursor-default'
+                          : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md keep-white border-0'
+                      }`}
+                      disabled={isOffered}
+                    >
+                      <BookOpen className="w-3.5 h-3.5" />
+                      {isOffered ? 'Training Offered' : 'Offer Training / Teach'}
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
 
@@ -324,7 +328,7 @@ const EmployerPanel = () => {
       {/* MENTOR APPLICATIONS FOR COMPANY POSITIONS */}
       <div className="card bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-4">
         <h3 className="flex items-center gap-2 text-slate-900 dark:text-white font-bold text-base">
-          <GraduationCap className="w-5 h-5 text-emerald-500" /> Mentor Applications for Company Positions ({companyMentorApps.length})
+          <GraduationCap className="w-5 h-5 text-emerald-500" /> Mentor Applications for Positions ({companyMentorApps.length})
         </h3>
         <p className="text-xs text-slate-500 dark:text-slate-400">
           Review mentors who applied to mentor applicants for your company's internship & job listings. Once accepted, their mentorship program will become visible to applicants!

@@ -1,32 +1,26 @@
-import React, { useContext, useState } from 'react';
+import { useContext, useState } from 'react';
 import { AppContext } from '../context/AppContext';
 import { 
   Trash2, 
-  UserPlus, 
   ShieldCheck, 
   Users, 
   Briefcase, 
   GraduationCap, 
   FileText, 
-  BarChart3, 
-  Settings,
   CheckCircle2,
-  XCircle,
-  Clock,
   Video,
-  Edit2,
-  Plus,
   AlertCircle,
   Search,
-  Sparkles,
-  UserCheck,
-  X
+  PlusCircle,
+  X,
+  UserCheck
 } from 'lucide-react';
 
 const AdminPanel = () => {
   const { 
     jobs, 
-    applications, 
+    addJob,
+    applications,
     updateApplicationStatus, 
     deleteApplication, 
     deleteJob,
@@ -34,25 +28,52 @@ const AdminPanel = () => {
     deleteUser, 
     updateUserRole,
     signup,
-    personalApps,
     mentorApps,
     approveMentorApp,
     rejectMentorApp
   } = useContext(AppContext);
   
-  const [activeTab, setActiveTab] = useState('overview'); // overview, users, jobs, applications
+  const [activeTab, setActiveTab] = useState('overview'); // overview, users, jobs, applications, hired, mentor_approval
   const [showAddUserModal, setShowAddUserModal] = useState(false);
-  const [userSearch, setUserSearch] = useState('');
-  const [modalTitle, setModalTitle] = useState('Provision New User Account');
+  const [showAddJobModal, setShowAddJobModal] = useState(false);
   
-  // Add User Form State
+  const [userSearch, setUserSearch] = useState('');
+  const [modalTitle, setModalTitle] = useState('Add New Administrator Account');
+  const [mentorApprovalMsg, setMentorApprovalMsg] = useState('');
+
+  const handleApproveMentorship = (id) => {
+    approveMentorApp(id);
+    setMentorApprovalMsg("Mentorship program approved! It is now published live on the Applicant Dashboard.");
+    setTimeout(() => setMentorApprovalMsg(''), 4000);
+  };
+
+  const handleRejectMentorship = (id) => {
+    rejectMentorApp(id);
+    setMentorApprovalMsg("Mentorship program status updated to Rejected.");
+    setTimeout(() => setMentorApprovalMsg(''), 4000);
+  };
+  
+  // Add Admin User Form State
   const [newUser, setNewUser] = useState({
     name: '',
     email: '',
     password: '',
-    role: 'user',
+    role: 'admin',
     mobile: '+92 300 0000000',
     idCard: '12345-1234567-1'
+  });
+
+  // Admin Public Job Form State with All Compulsory Details
+  const [adminJob, setAdminJob] = useState({
+    title: '',
+    company: 'System Admin',
+    type: 'Job',
+    workMode: 'Remote',
+    experienceLevel: 'Entry Level',
+    salary: '',
+    status: 'Open',
+    deadline: '',
+    requirements: ''
   });
 
   const [formError, setFormError] = useState('');
@@ -60,28 +81,27 @@ const AdminPanel = () => {
 
   const applicants = usersDb.filter(u => u.role === 'user');
   const employers = usersDb.filter(u => u.role === 'employer');
-  const mentors = usersDb.filter(u => u.role === 'mentor');
   const admins = usersDb.filter(u => u.role === 'admin');
 
-  const hiredCount = applications.filter(a => a.status === 'Hired').length;
+  const hiredCount = applications.filter(a => a.status === 'Hired' || a.status === 'Offered').length;
   const interviewCount = applications.filter(a => a.status === 'Interview').length;
 
-  const openAddUserModalWithRole = (defaultRole = 'user', title = 'Provision New User Account') => {
+  const openAddAdminModal = () => {
     setNewUser({
       name: '',
       email: '',
       password: '',
-      role: defaultRole,
+      role: 'admin',
       mobile: '+92 300 0000000',
       idCard: '12345-1234567-1'
     });
-    setModalTitle(title);
+    setModalTitle('Add New Administrator Account');
     setFormError('');
     setFormSuccess('');
     setShowAddUserModal(true);
   };
 
-  const handleAddUser = (e) => {
+  const handleAddAdminUser = (e) => {
     e.preventDefault();
     setFormError('');
     setFormSuccess('');
@@ -97,12 +117,12 @@ const AdminPanel = () => {
 
     const res = signup(newUser);
     if (res.success) {
-      setFormSuccess(`Account for ${newUser.name} created successfully as ${newUser.role.toUpperCase()}!`);
+      setFormSuccess(`Administrator account for ${newUser.name} created successfully!`);
       setNewUser({
         name: '',
         email: '',
         password: '',
-        role: 'user',
+        role: 'admin',
         mobile: '+92 300 0000000',
         idCard: '12345-1234567-1'
       });
@@ -113,6 +133,47 @@ const AdminPanel = () => {
     } else {
       setFormError(res.message || 'User creation failed.');
     }
+  };
+
+  const handlePostAdminJob = (e) => {
+    e.preventDefault();
+    setFormError('');
+    setFormSuccess('');
+
+    if (!adminJob.title.trim() || !adminJob.company.trim() || !adminJob.deadline || !adminJob.requirements.trim() || !adminJob.salary.trim()) {
+      setFormError('Please fill in all compulsory job fields (Title, Company, Category, Work Mode, Experience Level, Salary/Stipend, Deadline, Requirements).');
+      return;
+    }
+
+    addJob({
+      ...adminJob,
+      title: adminJob.title.trim(),
+      company: adminJob.company.trim() || 'System Admin',
+      type: adminJob.type || 'Job',
+      workMode: adminJob.workMode || 'Remote',
+      experienceLevel: adminJob.experienceLevel || 'Entry Level',
+      salary: adminJob.salary.trim(),
+      postedBy: 'Admin',
+      status: 'Open'
+    });
+
+    setFormSuccess(`"${adminJob.title}" published successfully to all panels! Open for all candidates to apply.`);
+    setAdminJob({
+      title: '',
+      company: 'System Admin',
+      type: 'Job',
+      workMode: 'Remote',
+      experienceLevel: 'Entry Level',
+      salary: '',
+      status: 'Open',
+      deadline: '',
+      requirements: ''
+    });
+
+    setTimeout(() => {
+      setShowAddJobModal(false);
+      setFormSuccess('');
+    }, 1500);
   };
 
   const filteredUsers = usersDb.filter(u => 
@@ -136,25 +197,42 @@ const AdminPanel = () => {
               Administrator Control Panel
             </h2>
             <p className="text-emerald-100 text-xs mt-1 font-medium">
-              Manage platform system users, provision new admin accounts, monitor job listings, and control applicant submissions.
+              Manage platform system users, log candidate applications, and control hiring statuses across all panels.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
-            {/* DEDICATED ADD NEW ADMIN BUTTON */}
+            {/* DEDICATED POST PUBLIC JOB BUTTON */}
             <button
-              onClick={() => openAddUserModalWithRole('admin', 'Add New Administrator Account')}
+              onClick={() => {
+                setFormError('');
+                setFormSuccess('');
+                setAdminJob({
+                  title: '',
+                  company: 'System Admin',
+                  type: 'Job',
+                  workMode: 'Remote',
+                  experienceLevel: 'Entry Level',
+                  salary: '',
+                  status: 'Open',
+                  deadline: '',
+                  requirements: ''
+                });
+                setShowAddJobModal(true);
+              }}
               className="btn bg-white text-emerald-900 hover:bg-slate-100 py-2.5 px-4 text-xs font-extrabold shadow-xl flex items-center gap-2 border-0"
-              title="Add New Admin Account"
+              title="Post New Public Opportunity for All Users"
             >
-              <ShieldCheck className="w-4 h-4 text-emerald-700" /> Add New Admin
+              <PlusCircle className="w-4 h-4 text-emerald-700" /> + Post Public Job
             </button>
 
+            {/* DEDICATED ADD ADMIN ONLY BUTTON */}
             <button
-              onClick={() => openAddUserModalWithRole('user', 'Provision New User Account')}
-              className="btn bg-emerald-950/40 hover:bg-emerald-950/60 text-white border border-white/30 py-2.5 px-4 text-xs font-bold flex items-center gap-2 backdrop-blur-md"
+              onClick={openAddAdminModal}
+              className="btn bg-emerald-950/50 hover:bg-emerald-950/70 text-white border border-white/30 py-2.5 px-4 text-xs font-bold flex items-center gap-2 backdrop-blur-md"
+              title="Add New Administrator Account"
             >
-              <UserPlus className="w-4 h-4 text-emerald-200" /> Provision User
+              <ShieldCheck className="w-4 h-4 text-emerald-300" /> + Add Admin
             </button>
           </div>
         </div>
@@ -192,7 +270,7 @@ const AdminPanel = () => {
             activeTab === 'applications' ? 'bg-emerald-600 text-white shadow-md keep-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
           }`}
         >
-          Applications ({applications.length})
+          All Applications ({applications.length})
         </button>
         <button
           onClick={() => setActiveTab('hired')}
@@ -204,13 +282,24 @@ const AdminPanel = () => {
         </button>
         <button
           onClick={() => setActiveTab('mentor_approval')}
-          className={`flex-1 min-w-[110px] py-2 text-xs font-bold rounded-xl transition-all ${
+          className={`flex-1 min-w-[110px] py-2 text-xs font-bold rounded-xl transition-all relative ${
             activeTab === 'mentor_approval' ? 'bg-emerald-600 text-white shadow-md keep-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
           }`}
         >
           Mentorship ({mentorApps.length})
+          {mentorApps.filter(m => m.status === 'Pending').length > 0 && (
+            <span className="ml-1.5 px-1.5 py-0.5 text-[10px] bg-amber-500 text-black font-extrabold rounded-full animate-pulse">
+              {mentorApps.filter(m => m.status === 'Pending').length} Pending
+            </span>
+          )}
         </button>
       </div>
+
+      {mentorApprovalMsg && (
+        <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 rounded-2xl text-xs font-bold flex items-center gap-3 shadow-lg animate-in fade-in duration-300">
+          <CheckCircle2 className="w-5 h-5 shrink-0" /> {mentorApprovalMsg}
+        </div>
+      )}
 
       {/* OVERVIEW TAB */}
       {activeTab === 'overview' && (
@@ -245,13 +334,69 @@ const AdminPanel = () => {
 
             <div className="stat-card bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl shadow-sm">
               <div className="flex justify-between items-center">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Total Hires</h4>
-                <ShieldCheck className="w-5 h-5 text-emerald-500 opacity-90" />
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Mentorship Proposals</h4>
+                <GraduationCap className="w-5 h-5 text-emerald-500 opacity-90" />
               </div>
-              <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white mt-1">{hiredCount}</h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">Successful Placements</p>
+              <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white mt-1">{mentorApps.length}</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">{mentorApps.filter(m => m.status === 'Pending').length} Pending Approval</p>
             </div>
           </div>
+
+          {/* PENDING MENTORSHIP APPROVALS SECTION ON OVERVIEW */}
+          {mentorApps.filter(m => m.status === 'Pending').length > 0 && (
+            <div className="card bg-amber-500/5 dark:bg-amber-950/20 border border-amber-500/30 rounded-2xl p-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                  <GraduationCap className="w-5 h-5 text-amber-500" /> Pending Mentorship Approvals Required ({mentorApps.filter(m => m.status === 'Pending').length})
+                </h3>
+                <span className="text-xs bg-amber-500/20 text-amber-700 dark:text-amber-300 font-bold px-3 py-1 rounded-full border border-amber-500/30">
+                  Action Required
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-400">
+                The following mentorship offerings were submitted by mentors. Review and approve them so they will be published live on the student applicant dashboard.
+              </p>
+
+              <div className="space-y-3">
+                {mentorApps.filter(m => m.status === 'Pending').map(m => (
+                  <div key={`overview-${m.id}`} className="p-4 bg-white dark:bg-slate-900 border border-amber-500/30 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-bold text-sm text-slate-900 dark:text-white">{m.mentorName}</h4>
+                        <span className="text-[10px] px-2.5 py-0.5 rounded font-extrabold uppercase bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                          Pending Approval
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">
+                        Program: <span className="font-bold text-slate-900 dark:text-white">{m.jobTitle}</span> ({m.company})
+                      </p>
+                      <p className="text-xs text-emerald-600 dark:text-emerald-400 font-bold">
+                        Mentorship Fee: {m.mentorshipFee}
+                      </p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 italic">
+                        "{m.description}"
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        onClick={() => handleApproveMentorship(m.id)}
+                        className="btn bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-4 text-xs font-bold shadow-md keep-white border-0 flex items-center gap-1.5"
+                      >
+                        <CheckCircle2 className="w-4 h-4" /> Approve Mentorship
+                      </button>
+                      <button
+                        onClick={() => handleRejectMentorship(m.id)}
+                        className="btn bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 py-2 px-3 text-xs font-bold border border-rose-500/30"
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -278,9 +423,8 @@ const AdminPanel = () => {
                 />
               </div>
               
-              {/* Dedicated Add Admin Button in Table Bar */}
               <button
-                onClick={() => openAddUserModalWithRole('admin', 'Add New Administrator Account')}
+                onClick={openAddAdminModal}
                 className="btn bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-3 text-xs font-bold shadow-md flex items-center gap-1.5 keep-white border-0"
               >
                 <ShieldCheck className="w-3.5 h-3.5" /> + Add Admin
@@ -355,25 +499,61 @@ const AdminPanel = () => {
       {/* JOBS TAB */}
       {activeTab === 'jobs' && (
         <div className="card bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-4">
-          <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <Briefcase className="w-5 h-5 text-emerald-500" /> Platform Listings Directory ({jobs.length})
-          </h3>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <Briefcase className="w-5 h-5 text-emerald-500" /> Platform Listings Directory ({jobs.length})
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">All jobs posted by Admin and Employers automatically sync across all user panels.</p>
+            </div>
+
+            <button
+              onClick={() => {
+                setFormError('');
+                setFormSuccess('');
+                setShowAddJobModal(true);
+              }}
+              className="btn bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-3.5 text-xs font-bold shadow-md flex items-center gap-1.5 keep-white border-0"
+            >
+              <PlusCircle className="w-4 h-4 text-white" /> Post New Job / Internship
+            </button>
+          </div>
+
           <div className="space-y-3">
-            {jobs.map(job => (
-              <div key={job.id} className="p-4 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center justify-between">
-                <div>
-                  <h4 className="font-bold text-sm text-slate-900 dark:text-white">{job.title}</h4>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">{job.company} • {job.type}</p>
+            {jobs.length === 0 ? (
+              <p className="text-slate-500 dark:text-slate-400 text-xs py-6 text-center font-medium">No job listings found on the platform.</p>
+            ) : (
+              jobs.map(job => (
+                <div key={job.id} className="p-4 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center justify-between gap-4">
+                  <div>
+                    <h4 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                      {job.title}
+                      <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-bold">
+                        {job.type}
+                      </span>
+                      {job.postedBy === 'Admin' || job.company === 'System Admin' ? (
+                        <span className="text-[10px] px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 font-bold">
+                          Admin Created
+                        </span>
+                      ) : (
+                        <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 font-bold">
+                          Employer: {job.company}
+                        </span>
+                      )}
+                    </h4>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">Company: {job.company} • Deadline: {job.deadline || 'N/A'}</p>
+                    {job.requirements && <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 line-clamp-1">{job.requirements}</p>}
+                  </div>
+                  <button
+                    onClick={() => deleteJob(job.id)}
+                    className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors border border-rose-500/20 shrink-0"
+                    title="Delete Job Listing"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
-                <button
-                  onClick={() => deleteJob(job.id)}
-                  className="p-2 text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors"
-                  title="Delete Job Listing"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       )}
@@ -381,20 +561,20 @@ const AdminPanel = () => {
       {/* APPLICATIONS TAB */}
       {activeTab === 'applications' && (
         <div className="card bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <FileText className="w-5 h-5 text-emerald-500" /> System Candidate Submissions ({applications.length})
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Administrators can change the status of any application directly (Applied, Shortlisted, Interview, Hired, Rejected).
+                View candidate application submissions and update hiring statuses across all platform listings.
               </p>
             </div>
           </div>
 
           <div className="space-y-3">
             {applications.length === 0 ? (
-              <p className="text-slate-500 dark:text-slate-400 text-xs py-4 text-center font-medium">No application records found.</p>
+              <p className="text-slate-500 dark:text-slate-400 text-xs py-6 text-center font-medium">No application records found.</p>
             ) : (
               applications.map(app => {
                 const job = jobs.find(j => j.id === app.jobId);
@@ -402,10 +582,11 @@ const AdminPanel = () => {
                   <div key={app.id} className="p-4 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
                       <div className="flex items-center gap-2">
-                        <h4 className="font-bold text-sm text-slate-900 dark:text-white">
+                        <h4 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
+                          <UserCheck className="w-4 h-4 text-emerald-500" />
                           Applicant: {app.applicantName}
                         </h4>
-                        <span className={`text-[10px] px-2 py-0.5 rounded font-extrabold uppercase border ${
+                        <span className={`text-[10px] px-2.5 py-0.5 rounded font-extrabold uppercase border ${
                           app.status === 'Hired' || app.status === 'Offered' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30' :
                           app.status === 'Shortlisted' ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30' :
                           app.status === 'Interview' ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/30' :
@@ -418,6 +599,9 @@ const AdminPanel = () => {
                       <p className="text-xs text-slate-600 dark:text-slate-300 font-medium mt-1">
                         Position: <span className="font-bold text-slate-900 dark:text-white">{job?.title || 'Platform Position'}</span> • Company: {job?.company || 'Employer'}
                       </p>
+                      {app.applicantEmail && (
+                        <p className="text-[11px] text-slate-400 font-medium mt-0.5">Email: {app.applicantEmail}</p>
+                      )}
                       {app.interviewSchedule && (
                         <p className="text-[11px] text-purple-600 dark:text-purple-400 font-semibold mt-0.5 flex items-center gap-1">
                           <Video className="w-3 h-3" /> Interview: {app.interviewSchedule}
@@ -428,7 +612,7 @@ const AdminPanel = () => {
                     <div className="flex items-center gap-3 shrink-0">
                       {/* Status Selector Dropdown */}
                       <div className="flex items-center gap-1.5">
-                        <span className="text-xs text-slate-500 dark:text-slate-400 font-bold hidden sm:inline">Update Status:</span>
+                        <span className="text-xs text-slate-500 dark:text-slate-400 font-bold hidden sm:inline">Set Status:</span>
                         <select 
                           value={app.status || 'Applied'} 
                           onChange={(e) => updateApplicationStatus(app.id, e.target.value)}
@@ -465,10 +649,10 @@ const AdminPanel = () => {
             <CheckCircle2 className="w-5 h-5 text-emerald-500" /> Successful Placements & Hired Candidates ({hiredCount})
           </h3>
           <div className="space-y-3">
-            {applications.filter(a => a.status === 'Hired' || a.status === 'Shortlisted').length === 0 ? (
+            {applications.filter(a => a.status === 'Hired' || a.status === 'Shortlisted' || a.status === 'Offered').length === 0 ? (
               <p className="text-slate-500 dark:text-slate-400 text-xs py-4 text-center">No hired or shortlisted candidates recorded yet.</p>
             ) : (
-              applications.filter(a => a.status === 'Hired' || a.status === 'Shortlisted').map(app => {
+              applications.filter(a => a.status === 'Hired' || a.status === 'Shortlisted' || a.status === 'Offered').map(app => {
                 const job = jobs.find(j => j.id === app.jobId);
                 return (
                   <div key={app.id} className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -547,7 +731,7 @@ const AdminPanel = () => {
                   <div className="flex items-center gap-2">
                     {m.status !== 'Approved' && (
                       <button
-                        onClick={() => approveMentorApp(m.id)}
+                        onClick={() => handleApproveMentorship(m.id)}
                         className="btn bg-emerald-600 hover:bg-emerald-700 text-white py-1.5 px-3 text-xs font-bold shadow-md keep-white border-0"
                       >
                         Approve Mentorship
@@ -555,7 +739,7 @@ const AdminPanel = () => {
                     )}
                     {m.status !== 'Rejected' && (
                       <button
-                        onClick={() => rejectMentorApp(m.id)}
+                        onClick={() => handleRejectMentorship(m.id)}
                         className="btn bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 py-1.5 px-3 text-xs font-bold border border-rose-500/30"
                       >
                         Reject
@@ -569,7 +753,166 @@ const AdminPanel = () => {
         </div>
       )}
 
-      {/* PROVISION USER / ADD NEW ADMIN MODAL */}
+      {/* POST ADMIN PUBLIC JOB / OPPORTUNITY MODAL */}
+      {showAddJobModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+          <div className="card bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 w-full max-w-xl shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <PlusCircle className="w-5 h-5 text-emerald-500" /> Post Official Opportunity (Public Post)
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  This public opportunity will be published across all user panels for all candidates to view and apply.
+                </p>
+              </div>
+              <button 
+                onClick={() => setShowAddJobModal(false)}
+                className="p-1 text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {formError && (
+              <div className="p-3 bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 rounded-xl text-xs flex items-center gap-2 font-semibold">
+                <AlertCircle className="w-4 h-4 shrink-0" /> {formError}
+              </div>
+            )}
+            {formSuccess && (
+              <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 rounded-xl text-xs flex items-center gap-2 font-semibold">
+                <CheckCircle2 className="w-4 h-4 shrink-0" /> {formSuccess}
+              </div>
+            )}
+
+            <form onSubmit={handlePostAdminJob} className="space-y-4">
+              <div>
+                <label className="form-label text-xs font-bold text-slate-700 dark:text-slate-300">Opportunity Title *</label>
+                <input
+                  type="text"
+                  value={adminJob.title}
+                  onChange={(e) => setAdminJob({ ...adminJob, title: e.target.value })}
+                  placeholder="e.g. Senior Frontend Developer or React Developer Intern"
+                  className="input-field w-full text-xs py-2.5 bg-white dark:bg-slate-950/80 text-slate-900 dark:text-white border-slate-300 dark:border-slate-800 font-semibold"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="form-label text-xs font-bold text-slate-700 dark:text-slate-300">Company / Organization *</label>
+                  <input
+                    type="text"
+                    value={adminJob.company}
+                    onChange={(e) => setAdminJob({ ...adminJob, company: e.target.value })}
+                    placeholder="System Admin or Organization Name"
+                    className="input-field w-full text-xs py-2.5 bg-white dark:bg-slate-950/80 text-slate-900 dark:text-white border-slate-300 dark:border-slate-800"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="form-label text-xs font-bold text-slate-700 dark:text-slate-300">Category / Type *</label>
+                  <select
+                    value={adminJob.type}
+                    onChange={(e) => setAdminJob({ ...adminJob, type: e.target.value })}
+                    className="form-select text-xs py-2.5 bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white font-bold"
+                    required
+                  >
+                    <option value="Job">Full-time Job</option>
+                    <option value="Internship">Internship Program</option>
+                    <option value="Part-time">Part-time Job</option>
+                    <option value="Contract">Contract Position</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="form-label text-xs font-bold text-slate-700 dark:text-slate-300">Work Mode *</label>
+                  <select
+                    value={adminJob.workMode}
+                    onChange={(e) => setAdminJob({ ...adminJob, workMode: e.target.value })}
+                    className="form-select text-xs py-2.5 bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white font-semibold"
+                    required
+                  >
+                    <option value="Remote">Remote</option>
+                    <option value="On-site">On-site</option>
+                    <option value="Hybrid">Hybrid</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="form-label text-xs font-bold text-slate-700 dark:text-slate-300">Experience Level *</label>
+                  <select
+                    value={adminJob.experienceLevel}
+                    onChange={(e) => setAdminJob({ ...adminJob, experienceLevel: e.target.value })}
+                    className="form-select text-xs py-2.5 bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white font-semibold"
+                    required
+                  >
+                    <option value="Entry Level">Entry Level</option>
+                    <option value="Mid Level">Mid Level</option>
+                    <option value="Senior Level">Senior Level</option>
+                    <option value="Executive">Executive</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="form-label text-xs font-bold text-slate-700 dark:text-slate-300">Salary / Stipend *</label>
+                  <input
+                    type="text"
+                    value={adminJob.salary}
+                    onChange={(e) => setAdminJob({ ...adminJob, salary: e.target.value })}
+                    placeholder="e.g. $60,000/yr or PKR 30,000/mo"
+                    className="input-field w-full text-xs py-2.5 bg-white dark:bg-slate-950/80 text-slate-900 dark:text-white border-slate-300 dark:border-slate-800"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="form-label text-xs font-bold text-slate-700 dark:text-slate-300">Application Deadline *</label>
+                <input
+                  type="date"
+                  value={adminJob.deadline}
+                  onChange={(e) => setAdminJob({ ...adminJob, deadline: e.target.value })}
+                  className="input-field w-full text-xs py-2.5 bg-white dark:bg-slate-950/80 text-slate-900 dark:text-white border-slate-300 dark:border-slate-800"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="form-label text-xs font-bold text-slate-700 dark:text-slate-300">Requirements & Detailed Description *</label>
+                <textarea
+                  value={adminJob.requirements}
+                  onChange={(e) => setAdminJob({ ...adminJob, requirements: e.target.value })}
+                  placeholder="Key responsibilities, candidate qualifications, required tech stack..."
+                  className="form-textarea text-xs bg-white dark:bg-slate-950/80 border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white min-h-[90px]"
+                  required
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setShowAddJobModal(false)}
+                  className="btn secondary py-2.5 px-4 text-xs font-bold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 px-5 text-xs font-bold shadow-lg shadow-emerald-500/25 keep-white border-0"
+                >
+                  Publish Public Opportunity to All Panels
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ADD NEW ADMIN MODAL */}
       {showAddUserModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
           <div className="card bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 w-full max-w-md shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
@@ -596,9 +939,9 @@ const AdminPanel = () => {
               </div>
             )}
 
-            <form onSubmit={handleAddUser} className="space-y-4">
+            <form onSubmit={handleAddAdminUser} className="space-y-4">
               <div>
-                <label className="form-label text-xs font-bold text-slate-700 dark:text-slate-300">Full Name *</label>
+                <label className="form-label text-xs font-bold text-slate-700 dark:text-slate-300">Administrator Full Name *</label>
                 <input
                   type="text"
                   value={newUser.name}
@@ -633,20 +976,6 @@ const AdminPanel = () => {
                 />
               </div>
 
-              <div>
-                <label className="form-label text-xs font-bold text-slate-700 dark:text-slate-300">Role Assignment</label>
-                <select
-                  value={newUser.role}
-                  onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
-                  className="form-select text-xs py-2.5 bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white font-bold"
-                >
-                  <option value="admin">System Administrator (Admin)</option>
-                  <option value="user">Applicant</option>
-                  <option value="employer">Employer</option>
-                  <option value="mentor">Mentor</option>
-                </select>
-              </div>
-
               <div className="flex justify-end gap-3 pt-3">
                 <button
                   type="button"
@@ -659,7 +988,7 @@ const AdminPanel = () => {
                   type="submit"
                   className="btn bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 px-5 text-xs font-bold shadow-lg shadow-emerald-500/25 keep-white border-0"
                 >
-                  Create {newUser.role === 'admin' ? 'Admin' : 'User'} Account
+                  Create Admin Account
                 </button>
               </div>
             </form>

@@ -1,8 +1,7 @@
-import React, { useContext, useState } from 'react';
+import { useContext, useState } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
-  FilePlus, 
   FileText, 
   Briefcase, 
   GraduationCap, 
@@ -10,11 +9,7 @@ import {
   LogOut, 
   Menu, 
   X, 
-  Plus, 
   Sparkles,
-  Users,
-  Search,
-  ChevronRight,
   Sun,
   Moon,
   User,
@@ -92,7 +87,6 @@ const Layout = () => {
   const getHeaderDetails = () => {
     const path = location.pathname;
     if (path === '/dashboard') return { title: 'Applicant Workspace', icon: <LayoutDashboard className="w-5 h-5 text-emerald-500" /> };
-    if (path === '/apply') return { title: 'Submit Application Form', icon: <FilePlus className="w-5 h-5 text-emerald-500" /> };
     if (path === '/applications') return { title: 'Application Tracker', icon: <FileText className="w-5 h-5 text-emerald-500" /> };
     if (path === '/employer') return { title: 'Employer Console', icon: <Briefcase className="w-5 h-5 text-emerald-500" /> };
     if (path === '/mentor') return { title: 'Mentorship Portal', icon: <GraduationCap className="w-5 h-5 text-emerald-500" /> };
@@ -164,15 +158,7 @@ const Layout = () => {
                 className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
               >
                 <LayoutDashboard className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> 
-                <span className="flex-1">Overview Dashboard</span>
-              </NavLink>
-              <NavLink 
-                to="/apply" 
-                onClick={() => setMobileOpen(false)}
-                className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-              >
-                <FilePlus className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> 
-                <span className="flex-1">Log Application</span>
+                <span className="flex-1">Overview & Opportunities</span>
               </NavLink>
               <NavLink 
                 to="/applications" 
@@ -180,7 +166,7 @@ const Layout = () => {
                 className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
               >
                 <FileText className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> 
-                <span className="flex-1">Applications Tracker</span>
+                <span className="flex-1">My Applications & Status</span>
               </NavLink>
             </>
           )}
@@ -217,14 +203,6 @@ const Layout = () => {
               >
                 <GraduationCap className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> 
                 <span className="flex-1">Mentorship Portal</span>
-              </NavLink>
-              <NavLink 
-                to="/applications" 
-                onClick={() => setMobileOpen(false)}
-                className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-              >
-                <FileText className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> 
-                <span className="flex-1">Mentee Applications</span>
               </NavLink>
             </>
           )}
@@ -311,16 +289,6 @@ const Layout = () => {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Quick Action Button for applicants */}
-            {currentUser?.role === 'user' && (
-              <button
-                onClick={() => navigate('/apply')}
-                className="btn bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-4 text-xs font-bold shadow-lg shadow-emerald-500/20 flex items-center gap-2 keep-white border-0"
-              >
-                <Plus className="w-4 h-4" /> <span className="hidden sm:inline">New Application</span>
-              </button>
-            )}
-
             <div className="h-5 w-[1px] bg-slate-200 dark:bg-slate-800 mx-1 hidden sm:block" />
 
             {/* Clickable User Profile Badge displaying Username */}

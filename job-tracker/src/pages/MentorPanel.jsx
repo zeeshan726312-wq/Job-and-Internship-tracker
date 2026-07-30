@@ -1,51 +1,56 @@
-import React, { useContext, useState } from 'react';
+import { useContext, useState } from 'react';
 import { AppContext } from '../context/AppContext';
 import { 
-  Check, 
   X, 
-  BookOpen, 
   PlusCircle, 
   GraduationCap, 
-  FileText, 
-  Award, 
-  MessageCircle,
-  Video,
-  Clock,
-  Sparkles,
-  UserCheck,
-  Briefcase,
-  DollarSign,
-  AlertCircle,
+  Briefcase, 
   CheckCircle2,
-  Send
+  Send,
+  Sparkles,
+  Ban
 } from 'lucide-react';
 
 const MentorPanel = () => {
   const { 
-    mentorships, updateMentorshipStatus, 
-    courses, addCourse, currentUser,
-    applications, personalApps, jobs,
-    mentorApps, applyToMentorJob
+    mentorships, updateMentorshipStatus,
+    currentUser,
+    jobs,
+    mentorApps, applyToMentorJob, postMentorshipProgram
   } = useContext(AppContext);
   
   const mentorName = currentUser?.name || 'Mentor Demo';
 
-  const [newCourse, setNewCourse] = useState({ title: '', description: '' });
-  const [coursePostedSuccess, setCoursePostedSuccess] = useState(false);
+  // Standalone Mentorship Program Form State
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newProgram, setNewProgram] = useState({
+    jobTitle: '',
+    company: 'Career Mentorship',
+    mentorshipFee: 'PKR 5,000 / month',
+    description: ''
+  });
+  const [programSuccessMsg, setProgramSuccessMsg] = useState('');
 
   // Apply to Mentor Internship Form State
   const [selectedJob, setSelectedJob] = useState(null);
   const [mentorshipFee, setMentorshipFee] = useState('PKR 5,000 / month');
   const [mentorshipNotes, setMentorshipNotes] = useState('');
   const [mentorAppSuccess, setMentorAppSuccess] = useState(false);
+  const [declinedJobs, setDeclinedJobs] = useState({});
 
-  const handlePostCourse = (e) => {
+  const handleCreateProgram = (e) => {
     e.preventDefault();
-    if (newCourse.title && newCourse.description) {
-      addCourse(newCourse);
-      setNewCourse({ title: '', description: '' });
-      setCoursePostedSuccess(true);
-      setTimeout(() => setCoursePostedSuccess(false), 2000);
+    if (newProgram.jobTitle && newProgram.description) {
+      postMentorshipProgram(newProgram);
+      setProgramSuccessMsg(`"${newProgram.jobTitle}" submitted successfully! Pending Admin Approval.`);
+      setNewProgram({
+        jobTitle: '',
+        company: 'Career Mentorship',
+        mentorshipFee: 'PKR 5,000 / month',
+        description: ''
+      });
+      setShowCreateModal(false);
+      setTimeout(() => setProgramSuccessMsg(''), 4000);
     }
   };
 
@@ -68,7 +73,10 @@ const MentorPanel = () => {
     }
   };
 
-  const myCourses = courses.filter(c => c.mentorName === mentorName);
+  const handleDeclineJob = (jobId) => {
+    setDeclinedJobs(prev => ({ ...prev, [jobId]: true }));
+  };
+
   const myRequests = mentorships.filter(m => m.mentorName === mentorName);
   const myMentorProposals = mentorApps.filter(m => m.mentorEmail === currentUser?.email || m.mentorName === mentorName);
 
@@ -87,149 +95,240 @@ const MentorPanel = () => {
               Mentorship Command Portal ({mentorName})
             </h2>
             <p className="text-emerald-100 text-xs mt-1 font-medium">
-              Explore open internships, apply to mentor specific positions, set mentorship fees, and guide student mentees.
+              Create custom mentorship offerings or apply to mentor platform positions. All mentorship offerings require Admin Approval before publishing to students.
             </p>
           </div>
         </div>
       </div>
 
-      {/* SECTION 1: EXPLORE OFFERED INTERNSHIPS & APPLY FOR MENTORSHIP */}
-      <div className="card bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-4">
-        <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-          <Briefcase className="w-5 h-5 text-emerald-500" /> Open Positions & Internships Available for Mentorship ({jobs.length})
-        </h3>
-        <p className="text-xs text-slate-500 dark:text-slate-400">
-          Mentors can view open internships offered by employers and submit a mentorship application. Once approved by the Employer or Admin, your mentorship program & fee will display on the applicant panel!
-        </p>
+      {programSuccessMsg && (
+        <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 rounded-2xl text-xs font-bold flex items-center gap-3 shadow-lg animate-in fade-in slide-in-from-top-2 duration-300">
+          <CheckCircle2 className="w-5 h-5 shrink-0" /> {programSuccessMsg}
+        </div>
+      )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {jobs.map(job => {
-            const existingProposal = myMentorProposals.find(m => m.jobId === job.id);
-            return (
-              <div key={job.id} className="p-4 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-xl space-y-3 flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
-                      {job.title}
-                      <span className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded font-bold border border-emerald-500/20">
-                        {job.type}
-                      </span>
-                    </h4>
-                    {existingProposal && (
-                      <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase border ${
-                        existingProposal.status === 'Approved' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30' :
-                        existingProposal.status === 'Rejected' ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30' :
-                        'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30'
+      {/* DEDICATED SECTION: CREATE MENTORSHIP PROGRAM FOR ADMIN APPROVAL & TRACK STATUS */}
+      <div className="card bg-gradient-to-r from-emerald-950/40 via-slate-900 to-teal-950/40 border border-emerald-500/30 rounded-2xl p-6 space-y-5 shadow-xl">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+          <div>
+            <h3 className="text-lg font-extrabold text-white flex items-center gap-2">
+              <GraduationCap className="w-5 h-5 text-emerald-400" /> Submit New Mentorship Program for Admin Approval
+            </h3>
+            <p className="text-xs text-emerald-200/80 mt-1">
+              Create a custom mentorship offering or career track. Submitted programs are sent to the System Administrator for approval before publishing to students.
+            </p>
+          </div>
+
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="btn bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs py-3 px-5 shadow-lg shadow-emerald-600/30 flex items-center gap-2 border-0 keep-white shrink-0"
+          >
+            <PlusCircle className="w-4 h-4" /> + Post Mentorship for Admin Approval
+          </button>
+        </div>
+
+        {/* LIST OF MY SUBMITTED MENTORSHIP OFFERINGS & APPROVAL STATUSES */}
+        <div className="space-y-3">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+            My Submitted Mentorship Offerings & Approval Statuses ({myMentorProposals.length})
+          </h4>
+
+          {myMentorProposals.length === 0 ? (
+            <div className="p-4 bg-slate-950/60 rounded-xl border border-slate-800 text-center text-xs text-slate-400">
+              You haven't submitted any mentorship programs yet. Click "+ Post Mentorship for Admin Approval" above to create your first offering!
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {myMentorProposals.map(prop => (
+                <div key={prop.id} className="p-4 bg-slate-950/90 border border-slate-800 rounded-xl space-y-2 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <h5 className="font-bold text-sm text-white">{prop.jobTitle}</h5>
+                      <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-extrabold uppercase border ${
+                        prop.status === 'Approved' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' :
+                        prop.status === 'Rejected' ? 'bg-rose-500/10 text-rose-400 border-rose-500/30' :
+                        'bg-amber-500/10 text-amber-300 border-amber-500/40 animate-pulse'
                       }`}>
-                        {existingProposal.status}
+                        {prop.status === 'Approved' ? '✓ Approved & Live on Applicant Panel' :
+                         prop.status === 'Rejected' ? 'Rejected by Admin' :
+                         '⏳ Pending Admin Approval'}
                       </span>
-                    )}
+                    </div>
+                    <p className="text-xs text-slate-400 font-medium">Domain / Company: {prop.company}</p>
+                    <p className="text-xs text-emerald-400 font-bold mt-1">Mentorship Fee: {prop.mentorshipFee}</p>
+                    <p className="text-xs text-slate-300 mt-1 italic">"{prop.description}"</p>
                   </div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">{job.company} • Deadline: {job.deadline || 'N/A'}</p>
-                  <p className="text-xs text-slate-600 dark:text-slate-300 mt-2 line-clamp-2">{job.requirements}</p>
                 </div>
-
-                <div className="pt-2 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                    {existingProposal ? `Fee: ${existingProposal.mentorshipFee}` : 'No mentor assigned'}
-                  </span>
-                  
-                  <button
-                    onClick={() => setSelectedJob(job)}
-                    className="btn bg-emerald-600 hover:bg-emerald-700 text-white py-1.5 px-3 text-xs font-bold shadow-md keep-white border-0 flex items-center gap-1.5"
-                  >
-                    <PlusCircle className="w-3.5 h-3.5" /> Apply to Mentor Position
-                  </button>
-                </div>
-              </div>
-            );
-          })}
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* SECTION 2: MENTORSHIP COURSES & MENTEE REQUESTS */}
-      <div className="grid-2">
-        {/* Course Creation */}
-        <div className="card bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-4">
-          <h3 className="flex items-center gap-2 text-slate-900 dark:text-white font-bold text-base">
-            <BookOpen className="w-5 h-5 text-emerald-500" /> Create Mentorship Course / Program
+      {/* SECTION 1: EXPLORE OFFERED INTERNSHIPS & APPLY FOR MENTORSHIP */}
+      <div className="card bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <Briefcase className="w-5 h-5 text-emerald-500" /> Open Platform Positions Available for Mentorship ({jobs.length})
           </h3>
+          <span className="text-xs text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 rounded-full flex items-center gap-1">
+            <Sparkles className="w-3.5 h-3.5" /> Admin & Employer Jobs
+          </span>
+        </div>
+        <p className="text-xs text-slate-500 dark:text-slate-400">
+          Mentors can review all jobs posted by Admins and Employers and submit a mentorship application. Once approved by the Employer or Admin, your mentorship program & fee will display on the applicant panel!
+        </p>
 
-          {coursePostedSuccess && (
-            <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-emerald-600 dark:text-emerald-400 text-xs font-semibold">
-              Mentorship program published successfully!
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {jobs.length === 0 ? (
+            <p className="text-slate-500 dark:text-slate-400 text-xs py-4 text-center col-span-2">No positions available for mentorship.</p>
+          ) : (
+            jobs.map(job => {
+              const existingProposal = myMentorProposals.find(m => m.jobId === job.id);
+              const isDeclined = declinedJobs[job.id];
+              const isAdminJob = job.postedBy === 'Admin' || job.company === 'System Admin';
+
+              if (isDeclined) {
+                return (
+                  <div key={job.id} className="p-4 bg-slate-100 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800/50 rounded-xl flex items-center justify-between opacity-60">
+                    <div>
+                      <h4 className="font-bold text-xs text-slate-500 line-through">{job.title}</h4>
+                      <p className="text-[11px] text-slate-400">Mentorship Option Declined</p>
+                    </div>
+                    <button 
+                      onClick={() => setDeclinedJobs(prev => ({ ...prev, [job.id]: false }))}
+                      className="text-xs text-indigo-500 hover:underline font-semibold"
+                    >
+                      Undo
+                    </button>
+                  </div>
+                );
+              }
+
+              return (
+                <div key={job.id} className="p-4 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-xl space-y-3 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                        {job.title}
+                        <span className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded font-bold border border-emerald-500/20">
+                          {job.type}
+                        </span>
+                      </h4>
+                      {isAdminJob ? (
+                        <span className="text-[10px] px-2 py-0.5 rounded font-extrabold uppercase bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30">
+                          Admin Listing
+                        </span>
+                      ) : (
+                        <span className="text-[10px] px-2 py-0.5 rounded font-bold uppercase bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                          {job.company}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">Entity: {job.company} • Deadline: {job.deadline || 'N/A'}</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-300 mt-2 line-clamp-2">{job.requirements}</p>
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2">
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                      {existingProposal ? `Proposal: ${existingProposal.status} (${existingProposal.mentorshipFee})` : 'No mentor assigned'}
+                    </span>
+                    
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => handleDeclineJob(job.id)}
+                        className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors border border-slate-300 dark:border-slate-800"
+                        title="Decline / Pass on Mentoring this Position"
+                      >
+                        <Ban className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        onClick={() => setSelectedJob(job)}
+                        className={`btn py-1.5 px-3 text-xs font-bold shadow-md flex items-center gap-1.5 border-0 ${
+                          existingProposal?.status === 'Approved'
+                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 cursor-default'
+                            : 'bg-emerald-600 hover:bg-emerald-700 text-white keep-white'
+                        }`}
+                        disabled={existingProposal?.status === 'Approved'}
+                      >
+                        <PlusCircle className="w-3.5 h-3.5" />
+                        {existingProposal ? `Status: ${existingProposal.status}` : 'Apply to Mentor Position'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
           )}
+        </div>
+      </div>
 
-          <form onSubmit={handlePostCourse} className="space-y-4">
-            <div>
-              <label className="form-label text-xs font-bold text-slate-700 dark:text-slate-300">Program Title *</label>
-              <input 
-                type="text" 
-                placeholder="e.g. React & UI/UX Career Accelerator" 
-                value={newCourse.title}
-                onChange={(e) => setNewCourse({ ...newCourse, title: e.target.value })}
-                className="input-field w-full text-xs bg-white dark:bg-slate-950/80 border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="form-label text-xs font-bold text-slate-700 dark:text-slate-300">Curriculum & Goals *</label>
-              <textarea
-                placeholder="Describe mentorship curriculum, resume reviews, mock interviews..."
-                value={newCourse.description}
-                onChange={(e) => setNewCourse({ ...newCourse, description: e.target.value })}
-                className="form-textarea text-xs bg-white dark:bg-slate-950/80 border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white min-h-[90px]"
-                required
-              ></textarea>
-            </div>
-
-            <button type="submit" className="btn bg-emerald-600 hover:bg-emerald-700 text-white w-full text-xs font-bold py-2.5 shadow-lg shadow-emerald-500/20 keep-white border-0">
-              <PlusCircle className="w-4 h-4" /> Publish Mentorship Program
-            </button>
-          </form>
-
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 pt-3 border-t border-slate-200 dark:border-slate-800">
-            Active Offered Programs ({myCourses.length})
+      {/* SECTION 2: STUDENT MENTEE APPLICATIONS */}
+      <div className="card bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="flex items-center gap-2 text-slate-900 dark:text-white font-bold text-base">
+            <GraduationCap className="w-5 h-5 text-emerald-500" /> Student Mentee Applications ({myRequests.length})
           </h3>
-          <div className="list space-y-2">
-            {myCourses.map(c => (
-              <div key={c.id} className="p-3.5 bg-slate-50 dark:bg-slate-950/80 rounded-xl border border-slate-200 dark:border-slate-800 text-xs space-y-1">
-                <h4 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <Award className="w-4 h-4 text-emerald-500" /> {c.title}
-                </h4>
-                <p className="text-slate-500 dark:text-slate-400 leading-relaxed">{c.description}</p>
-              </div>
-            ))}
-          </div>
+          {myRequests.filter(r => r.status === 'Pending').length > 0 && (
+            <span className="text-xs bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 px-3 py-1 rounded-full font-bold">
+              {myRequests.filter(r => r.status === 'Pending').length} Awaiting Review
+            </span>
+          )}
         </div>
 
-        {/* Mentorship Requests & Monitoring */}
-        <div className="space-y-6 flex flex-col">
-          <div className="card bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-4">
-            <h3 className="flex items-center gap-2 text-slate-900 dark:text-white font-bold text-base">
-              <GraduationCap className="w-5 h-5 text-emerald-500" /> Student Mentee Applications ({myRequests.length})
-            </h3>
-            <div className="list max-h-[300px] overflow-y-auto pr-1 space-y-2">
-              {myRequests.length === 0 ? (
-                <p className="text-xs text-slate-500 py-3">No pending student mentee requests.</p>
-              ) : (
-                myRequests.map(req => (
-                  <div key={req.id} className="p-3.5 bg-slate-50 dark:bg-slate-950/80 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs">
-                    <div>
-                      <h4 className="font-bold text-slate-900 dark:text-white">{req.menteeName}</h4>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Program: {req.jobTitle || 'Career Mentorship'}</p>
-                      {req.mentorshipFee && <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold">Fee: {req.mentorshipFee}</p>}
-                    </div>
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/30 uppercase">
-                      {req.status}
+        <div className="space-y-3">
+          {myRequests.length === 0 ? (
+            <p className="text-xs text-slate-500 dark:text-slate-400 py-4 text-center">No student mentee applications yet.</p>
+          ) : (
+            myRequests.map(req => (
+              <div key={req.id} className="p-4 bg-slate-50 dark:bg-slate-950/80 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h4 className="font-bold text-sm text-slate-900 dark:text-white">{req.menteeName}</h4>
+                    <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-extrabold uppercase border ${
+                      req.status === 'Approved'
+                        ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+                        : req.status === 'Rejected'
+                        ? 'bg-rose-500/10 text-rose-500 dark:text-rose-400 border-rose-500/30'
+                        : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 animate-pulse'
+                    }`}>
+                      {req.status === 'Approved' ? '✓ Approved' : req.status === 'Rejected' ? '✕ Rejected' : '⏳ Pending'}
                     </span>
                   </div>
-                ))
-              )}
-            </div>
-          </div>
+                  <p className="text-slate-500 dark:text-slate-400">Program: <span className="font-semibold text-slate-700 dark:text-slate-300">{req.jobTitle || 'Career Mentorship'}</span></p>
+                  {req.menteeEmail && <p className="text-slate-400 dark:text-slate-500">{req.menteeEmail}</p>}
+                  {req.mentorshipFee && <p className="text-emerald-600 dark:text-emerald-400 font-bold">Fee: {req.mentorshipFee}</p>}
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={() => updateMentorshipStatus(req.id, 'Approved')}
+                    disabled={req.status === 'Approved'}
+                    className={`btn py-2 px-4 text-xs font-bold flex items-center gap-1.5 border-0 ${
+                      req.status === 'Approved'
+                        ? 'bg-emerald-600 text-white keep-white cursor-default'
+                        : 'bg-emerald-600/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-600 hover:text-white'
+                    }`}
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    {req.status === 'Approved' ? 'Approved' : 'Approve'}
+                  </button>
+                  <button
+                    onClick={() => updateMentorshipStatus(req.id, 'Rejected')}
+                    disabled={req.status === 'Rejected'}
+                    className={`btn py-2 px-3 text-xs font-bold border ${
+                      req.status === 'Rejected'
+                        ? 'bg-rose-600 text-white keep-white border-rose-600 cursor-default'
+                        : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 hover:bg-rose-600 hover:text-white border-rose-500/30'
+                    }`}
+                  >
+                    {req.status === 'Rejected' ? 'Rejected' : 'Reject'}
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
@@ -302,6 +401,95 @@ const MentorPanel = () => {
                   className="btn bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 px-5 text-xs font-bold shadow-lg shadow-emerald-500/25 keep-white border-0 flex items-center gap-1.5"
                 >
                   <Send className="w-4 h-4" /> Submit Application
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* POST STANDALONE MENTORSHIP PROGRAM MODAL */}
+      {showCreateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="card bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 w-full max-w-lg shadow-2xl space-y-6 animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
+              <div>
+                <h3 className="text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                  <GraduationCap className="w-5 h-5 text-emerald-500" /> Post New Mentorship Program
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  Submitted programs will be sent to the Admin for approval before publishing on the applicant dashboard.
+                </p>
+              </div>
+              <button 
+                onClick={() => setShowCreateModal(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateProgram} className="space-y-4">
+              <div>
+                <label className="form-label text-xs font-bold text-slate-700 dark:text-slate-300">Mentorship Program Title *</label>
+                <input 
+                  type="text"
+                  value={newProgram.jobTitle}
+                  onChange={(e) => setNewProgram({...newProgram, jobTitle: e.target.value})}
+                  placeholder="e.g. Full-Stack Engineering & System Design Mentorship"
+                  className="input-field w-full text-xs py-2.5 bg-white dark:bg-slate-950/80 text-slate-900 dark:text-white border-slate-300 dark:border-slate-800"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="form-label text-xs font-bold text-slate-700 dark:text-slate-300">Domain / Organization Category *</label>
+                <input 
+                  type="text"
+                  value={newProgram.company}
+                  onChange={(e) => setNewProgram({...newProgram, company: e.target.value})}
+                  placeholder="e.g. Software Engineering, Data Science, AI/ML"
+                  className="input-field w-full text-xs py-2.5 bg-white dark:bg-slate-950/80 text-slate-900 dark:text-white border-slate-300 dark:border-slate-800"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="form-label text-xs font-bold text-slate-700 dark:text-slate-300">Mentorship Fee / Stipend *</label>
+                <input 
+                  type="text"
+                  value={newProgram.mentorshipFee}
+                  onChange={(e) => setNewProgram({...newProgram, mentorshipFee: e.target.value})}
+                  placeholder="e.g. PKR 5,000 / month or Free"
+                  className="input-field w-full text-xs py-2.5 bg-white dark:bg-slate-950/80 text-slate-900 dark:text-white border-slate-300 dark:border-slate-800"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="form-label text-xs font-bold text-slate-700 dark:text-slate-300">Program Overview & Curriculum Notes *</label>
+                <textarea
+                  value={newProgram.description}
+                  onChange={(e) => setNewProgram({...newProgram, description: e.target.value})}
+                  placeholder="Describe your weekly 1-on-1 sessions, project guidance, code reviews, and career coaching..."
+                  className="form-textarea text-xs bg-white dark:bg-slate-950/80 border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white min-h-[100px]"
+                  required
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowCreateModal(false)}
+                  className="btn secondary py-2.5 px-4 text-xs font-bold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 px-5 text-xs font-bold shadow-lg shadow-emerald-500/25 keep-white border-0 flex items-center gap-1.5"
+                >
+                  <Send className="w-4 h-4" /> Submit for Admin Approval
                 </button>
               </div>
             </form>

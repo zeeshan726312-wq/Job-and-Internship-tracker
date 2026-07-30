@@ -1,17 +1,31 @@
-import React, { useContext, useState } from 'react';
+import { useContext } from 'react';
 import { AppContext } from '../context/AppContext';
-import { Send, Clock, CheckCircle, XCircle, Calendar, FileText, PlusCircle, GraduationCap, Video } from 'lucide-react';
+import { Send, Clock, CheckCircle, XCircle, Calendar, FileText, GraduationCap, Video } from 'lucide-react';
+
+const StatusIcon = ({ status }) => {
+  switch (status) {
+    case 'Applied':
+    case 'Pending': return <Clock className="w-5 h-5 text-warning" />;
+    case 'Shortlisted': return <CheckCircle className="w-5 h-5 text-primary" />;
+    case 'Interview': return <Video className="w-5 h-5 text-secondary" />;
+    case 'Hired': return <CheckCircle className="w-5 h-5 text-success" />;
+    case 'Rejected': return <XCircle className="w-5 h-5 text-danger" />;
+    default: return null;
+  }
+};
 
 const UserPanel = () => {
   const { 
     jobs, applications, applyForJob, 
     courses, requestMentorship, mentorships,
-    personalApps, addPersonalApp, updatePersonalAppStatus,
     currentUser 
   } = useContext(AppContext);
   
   const isUserApp = (app) => {
-    if (!app || !currentUser) return false;
+    if (!app) return false;
+    if (!currentUser) return true;
+    if (currentUser.role === 'admin' || currentUser.role === 'employer') return true;
+
     const cName = (currentUser.name || '').toLowerCase().trim();
     const cUsername = (currentUser.username || '').toLowerCase().trim();
     const cEmail = (currentUser.email || '').toLowerCase().trim();
@@ -20,44 +34,20 @@ const UserPanel = () => {
     const appEmail = (app.applicantEmail || '').toLowerCase().trim();
 
     if (appEmail && cEmail && appEmail === cEmail) return true;
-    if (appName && (appName === cName || appName === cUsername || appName === cEmail)) return true;
-    if (currentUser.role === 'user' && (appName === 'user demo' || appName === 'user')) return true;
+    if (appName && (appName === cName || appName === cUsername || (cName && appName.includes(cName)))) return true;
+    if (currentUser.role === 'user' && (!appName || appName === 'user demo' || appName === 'user')) return true;
     return false;
   };
 
   const applicantName = currentUser?.name || currentUser?.username || 'user';
-
-  // Personal App State
-  const [newPersonalApp, setNewPersonalApp] = useState({ title: '', company: '', link: '', status: 'Applied' });
 
   const handleApply = (jobId) => {
     applyForJob(jobId, applicantName);
     alert('Application submitted successfully!');
   };
 
-  const handleAddPersonalApp = (e) => {
-    e.preventDefault();
-    if (newPersonalApp.title && newPersonalApp.company) {
-      addPersonalApp(newPersonalApp);
-      setNewPersonalApp({ title: '', company: '', link: '', status: 'Applied' });
-    }
-  };
-
   const myApplications = (applications || []).filter(isUserApp);
-  const myPersonalApps = (personalApps || []).filter(isUserApp);
   const myMentorships = (mentorships || []).filter(m => isUserApp({ applicantName: m.menteeName }));
-
-  const StatusIcon = ({ status }) => {
-    switch (status) {
-      case 'Applied':
-      case 'Pending': return <Clock className="w-5 h-5 text-warning" />;
-      case 'Shortlisted': return <CheckCircle className="w-5 h-5 text-primary" />;
-      case 'Interview': return <Video className="w-5 h-5 text-secondary" />;
-      case 'Hired': return <CheckCircle className="w-5 h-5 text-success" />;
-      case 'Rejected': return <XCircle className="w-5 h-5 text-danger" />;
-      default: return null;
-    }
-  };
 
   return (
     <div className="panel-container">
@@ -174,45 +164,6 @@ const UserPanel = () => {
                   </div>
                 );
               })}
-            </div>
-          </div>
-
-          <div className="card">
-            <h3>Personal Application Tracker</h3>
-            <p className="text-sm text-secondaryText mb-4">Track jobs you applied to externally (e.g. LinkedIn).</p>
-            
-            <form onSubmit={handleAddPersonalApp} className="flex gap-2 mb-4">
-              <input 
-                type="text" placeholder="Role Title" className="input-field flex-1"
-                value={newPersonalApp.title} onChange={e => setNewPersonalApp({...newPersonalApp, title: e.target.value})} required
-              />
-              <input 
-                type="text" placeholder="Company" className="input-field flex-1"
-                value={newPersonalApp.company} onChange={e => setNewPersonalApp({...newPersonalApp, company: e.target.value})} required
-              />
-              <button type="submit" className="btn primary px-3"><PlusCircle className="w-5 h-5"/></button>
-            </form>
-
-            <div className="list">
-              {myPersonalApps.map(app => (
-                <div key={app.id} className="list-item flex justify-between items-center">
-                  <div>
-                    <h4 className="font-semibold">{app.title}</h4>
-                    <p className="text-sm text-secondaryText">{app.company}</p>
-                  </div>
-                  <select 
-                    className="bg-black/30 border border-borderC rounded px-2 py-1 text-sm outline-none"
-                    value={app.status}
-                    onChange={(e) => updatePersonalAppStatus(app.id, e.target.value)}
-                  >
-                    <option value="Applied">Applied</option>
-                    <option value="Shortlisted">Shortlisted</option>
-                    <option value="Interview">Interview</option>
-                    <option value="Hired">Hired</option>
-                    <option value="Rejected">Rejected</option>
-                  </select>
-                </div>
-              ))}
             </div>
           </div>
         </div>

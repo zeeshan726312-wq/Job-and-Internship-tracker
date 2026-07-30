@@ -1,9 +1,7 @@
-import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
 import Layout from './components/Layout';
 import DashboardOverview from './pages/DashboardOverview';
-import ApplicationForm from './pages/ApplicationForm';
 import ApplicationsList from './pages/ApplicationsList';
 import EmployerPanel from './pages/EmployerPanel';
 import MentorPanel from './pages/MentorPanel';
@@ -28,16 +26,9 @@ function App() {
                 <DashboardOverview />
               </ProtectedRoute>
             } />
-
-            {/* Application Form Page */}
-            <Route path="apply" element={
+            <Route path="dashboard" element={
               <ProtectedRoute allowedRoles={['user', 'employer', 'mentor', 'admin']}>
-                <ApplicationForm />
-              </ProtectedRoute>
-            } />
-            <Route path="apply/:jobId" element={
-              <ProtectedRoute allowedRoles={['user', 'employer', 'mentor', 'admin']}>
-                <ApplicationForm />
+                <DashboardOverview />
               </ProtectedRoute>
             } />
 

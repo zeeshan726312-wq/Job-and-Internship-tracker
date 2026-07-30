@@ -1,9 +1,7 @@
-import React, { useContext, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useContext, useState } from 'react';
 import { AppContext } from '../context/AppContext';
 import { 
   FileText, 
-  PlusCircle, 
   Clock, 
   CheckCircle2, 
   Video, 
@@ -11,21 +9,54 @@ import {
   Search, 
   ExternalLink,
   Briefcase,
-  GraduationCap,
   LayoutGrid,
   List,
-  Sparkles,
-  ArrowRight,
-  Filter,
   Calendar,
-  Layers,
   Edit2,
   Trash2,
   X,
-  Check,
-  Building2,
-  Link as LinkIcon
+  Check
 } from 'lucide-react';
+
+const StatusBadge = ({ status }) => {
+  let colorClasses = 'bg-slate-500/10 text-slate-400 border-slate-500/20';
+  let icon = <Clock className="w-3.5 h-3.5 text-slate-400" />;
+
+  switch (status) {
+    case 'Applied':
+    case 'Pending':
+      colorClasses = 'bg-amber-500/10 text-amber-400 border-amber-500/30';
+      icon = <Clock className="w-3.5 h-3.5 text-amber-400" />;
+      break;
+    case 'Shortlisted':
+      colorClasses = 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30';
+      icon = <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400" />;
+      break;
+    case 'Interview':
+      colorClasses = 'bg-purple-500/10 text-purple-400 border-purple-500/30';
+      icon = <Video className="w-3.5 h-3.5 text-purple-400" />;
+      break;
+    case 'Hired':
+    case 'Offered':
+    case 'Accepted':
+      colorClasses = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30';
+      icon = <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />;
+      break;
+    case 'Rejected':
+      colorClasses = 'bg-rose-500/10 text-rose-400 border-rose-500/30';
+      icon = <XCircle className="w-3.5 h-3.5 text-rose-400" />;
+      break;
+    default:
+      break;
+  }
+
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border ${colorClasses}`}>
+      {icon}
+      <span>{status}</span>
+    </span>
+  );
+};
 
 const ApplicationsList = () => {
   const { 
@@ -38,7 +69,6 @@ const ApplicationsList = () => {
     deletePersonalApp,
     deleteApplication
   } = useContext(AppContext);
-  const navigate = useNavigate();
 
   const [viewMode, setViewMode] = useState('kanban'); // 'kanban' | 'list'
   const [filterType, setFilterType] = useState('All'); // All, Job, Internship
@@ -59,7 +89,10 @@ const ApplicationsList = () => {
   });
 
   const isUserApp = (app) => {
-    if (!app || !currentUser) return false;
+    if (!app) return false;
+    if (!currentUser) return true;
+    if (currentUser.role === 'admin' || currentUser.role === 'employer') return true;
+
     const cName = (currentUser.name || '').toLowerCase().trim();
     const cUsername = (currentUser.username || '').toLowerCase().trim();
     const cEmail = (currentUser.email || '').toLowerCase().trim();
@@ -68,12 +101,10 @@ const ApplicationsList = () => {
     const appEmail = (app.applicantEmail || '').toLowerCase().trim();
 
     if (appEmail && cEmail && appEmail === cEmail) return true;
-    if (appName && (appName === cName || appName === cUsername || appName === cEmail)) return true;
-    if (currentUser.role === 'user' && (appName === 'user demo' || appName === 'user')) return true;
+    if (appName && (appName === cName || appName === cUsername || (cName && appName.includes(cName)))) return true;
+    if (currentUser.role === 'user' && (!appName || appName === 'user demo' || appName === 'user')) return true;
     return false;
   };
-
-  const applicantName = currentUser?.name || currentUser?.username || 'user';
 
   const safeApps = Array.isArray(applications) ? applications : [];
   const safePersonal = Array.isArray(personalApps) ? personalApps : [];
@@ -174,46 +205,6 @@ const ApplicationsList = () => {
     setEditingApp(null);
   };
 
-  const StatusBadge = ({ status }) => {
-    let colorClasses = 'bg-slate-500/10 text-slate-400 border-slate-500/20';
-    let icon = <Clock className="w-3.5 h-3.5 text-slate-400" />;
-
-    switch (status) {
-      case 'Applied':
-      case 'Pending':
-        colorClasses = 'bg-amber-500/10 text-amber-400 border-amber-500/30';
-        icon = <Clock className="w-3.5 h-3.5 text-amber-400" />;
-        break;
-      case 'Shortlisted':
-        colorClasses = 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30';
-        icon = <CheckCircle2 className="w-3.5 h-3.5 text-indigo-400" />;
-        break;
-      case 'Interview':
-        colorClasses = 'bg-purple-500/10 text-purple-400 border-purple-500/30';
-        icon = <Video className="w-3.5 h-3.5 text-purple-400" />;
-        break;
-      case 'Hired':
-      case 'Offered':
-      case 'Accepted':
-        colorClasses = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30';
-        icon = <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />;
-        break;
-      case 'Rejected':
-        colorClasses = 'bg-rose-500/10 text-rose-400 border-rose-500/30';
-        icon = <XCircle className="w-3.5 h-3.5 text-rose-400" />;
-        break;
-      default:
-        break;
-    }
-
-    return (
-      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border ${colorClasses}`}>
-        {icon}
-        <span>{status}</span>
-      </span>
-    );
-  };
-
   const kanbanColumns = [
     { key: 'Applied', label: 'Applied', color: 'border-amber-500/30 text-amber-400 bg-amber-500/10' },
     { key: 'Shortlisted', label: 'Shortlisted', color: 'border-indigo-500/30 text-indigo-400 bg-indigo-500/10' },
@@ -257,13 +248,6 @@ const ApplicationsList = () => {
               <List className="w-4 h-4" /> List
             </button>
           </div>
-
-          <button
-            onClick={() => navigate('/apply')}
-            className="btn bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 px-4 text-xs font-bold shadow-lg shadow-emerald-500/25 flex items-center gap-2 keep-white border-0"
-          >
-            <PlusCircle className="w-4 h-4" /> Add Application
-          </button>
         </div>
       </div>
 
@@ -428,13 +412,7 @@ const ApplicationsList = () => {
             <div className="card text-center py-12 border-slate-800">
               <FileText className="w-12 h-12 mx-auto text-slate-600 mb-3" />
               <h3 className="text-lg font-bold text-white">No Applications Found</h3>
-              <p className="text-xs text-slate-400 mt-1">Try adjusting your filter search terms or add a new application.</p>
-              <button
-                onClick={() => navigate('/apply')}
-                className="btn primary py-2 px-4 text-xs font-bold mt-4"
-              >
-                <PlusCircle className="w-4 h-4" /> Open Application Form
-              </button>
+              <p className="text-xs text-slate-400 mt-1">Try adjusting your search terms or apply to active listings on the dashboard.</p>
             </div>
           ) : (
             filteredApps.map(app => (

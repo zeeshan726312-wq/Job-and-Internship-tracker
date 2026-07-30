@@ -1,20 +1,20 @@
-import React, { createContext, useState, useEffect } from 'react';
+import { createContext, useState, useEffect, useRef } from 'react';
 import { dbService } from '../services/dbService';
 
 export const AppContext = createContext();
 
-// Mock Initial Data (Fallback if localStorage is empty)
+// Mock Initial Data (Fallback if cloud & localStorage are empty)
 const initialJobs = [
   { id: 1, title: 'Frontend Developer', company: 'TechCorp', type: 'Job', status: 'Open', deadline: '2026-12-31', requirements: 'React, Tailwind, 2 years experience.' },
   { id: 2, title: 'React Intern', company: 'StartupInc', type: 'Internship', status: 'Open', deadline: '2026-08-15', requirements: 'Basic HTML/CSS, willing to learn.' },
 ];
 
 const initialApplications = [
-  { id: 101, jobId: 1, applicantName: 'User Demo', status: 'Applied', interviewSchedule: '', feedback: '' },
+  { id: 101, jobId: 1, applicantName: 'User Demo', applicantEmail: 'user@gmail.com', status: 'Applied', interviewSchedule: '', feedback: '' },
 ];
 
 const initialPersonalApps = [
-  { id: 301, applicantName: 'User Demo', title: 'Software Engineer', company: 'Google', type: 'Job', status: 'Applied', link: 'https://careers.google.com' }
+  { id: 301, applicantName: 'User Demo', applicantEmail: 'user@gmail.com', title: 'Software Engineer', company: 'Google', type: 'Job', status: 'Applied', link: 'https://careers.google.com' }
 ];
 
 const initialCourses = [
@@ -22,7 +22,7 @@ const initialCourses = [
 ];
 
 const initialMentorships = [
-  { id: 201, mentorName: 'Mentor Demo', menteeName: 'User Demo', courseId: 401, status: 'Approved' }
+  { id: 201, mentorName: 'Mentor Demo', menteeName: 'User Demo', menteeEmail: 'user@gmail.com', courseId: 401, status: 'Approved' }
 ];
 
 const initialMentorApps = [
@@ -51,7 +51,7 @@ const getStoredItem = (key, fallback, storage = localStorage) => {
   try {
     const item = storage.getItem(key);
     return item ? JSON.parse(item) : fallback;
-  } catch (err) {
+  } catch {
     return fallback;
   }
 };
@@ -75,7 +75,7 @@ export const AppProvider = ({ children }) => {
     }
   }, [theme]);
 
-  // Auth State (Session-first for security, check localStorage ONLY if rememberMe is enabled)
+  // Auth State
   const [currentUser, setCurrentUser] = useState(() => {
     const sessionUser = getStoredItem('currentUser_session', null, sessionStorage);
     if (sessionUser) return sessionUser;
@@ -87,12 +87,8 @@ export const AppProvider = ({ children }) => {
     return null;
   });
 
-  const [usersDb, setUsersDb] = useState(() => {
-    const stored = getStoredItem('jt_users_db', mockUsers);
-    return Array.isArray(stored) && stored.length > 0 ? stored : mockUsers;
-  });
-  
-  // Data State with LocalStorage initialization & safe array fallbacks
+  // Data States
+  const [usersDb, setUsersDb] = useState(() => getStoredItem('jt_users_db', mockUsers) || mockUsers);
   const [jobs, setJobs] = useState(() => getStoredItem('jt_jobs', initialJobs) || initialJobs);
   const [applications, setApplications] = useState(() => getStoredItem('jt_applications', initialApplications) || initialApplications);
   const [personalApps, setPersonalApps] = useState(() => getStoredItem('jt_personal_apps', initialPersonalApps) || initialPersonalApps);
@@ -100,45 +96,162 @@ export const AppProvider = ({ children }) => {
   const [mentorships, setMentorships] = useState(() => getStoredItem('jt_mentorships', initialMentorships) || initialMentorships);
   const [mentorApps, setMentorApps] = useState(() => getStoredItem('jt_mentor_apps', initialMentorApps) || initialMentorApps);
 
-  // Sync to Database & Storage Service whenever state changes
-  useEffect(() => { dbService.syncCollection('jt_jobs', jobs); }, [jobs]);
-  useEffect(() => { dbService.syncCollection('jt_applications', applications); }, [applications]);
-  useEffect(() => { dbService.syncCollection('jt_personal_apps', personalApps); }, [personalApps]);
-  useEffect(() => { dbService.syncCollection('jt_users_db', usersDb); }, [usersDb]);
-  useEffect(() => { dbService.syncCollection('jt_courses', courses); }, [courses]);
-  useEffect(() => { dbService.syncCollection('jt_mentorships', mentorships); }, [mentorships]);
-  useEffect(() => { dbService.syncCollection('jt_mentor_apps', mentorApps); }, [mentorApps]);
+  // Refs to eliminate stale closure issues in interval callbacks
+  const usersDbRef = useRef(usersDb);
+  const jobsRef = useRef(jobs);
+  const applicationsRef = useRef(applications);
+  const personalAppsRef = useRef(personalApps);
+  const coursesRef = useRef(courses);
+  const mentorshipsRef = useRef(mentorships);
+  const mentorAppsRef = useRef(mentorApps);
 
-  // Fetch latest live data from Firebase Cloud on startup across all devices
+  // Keep refs synchronized with state
+  useEffect(() => { usersDbRef.current = usersDb; }, [usersDb]);
+  useEffect(() => { jobsRef.current = jobs; }, [jobs]);
+  useEffect(() => { applicationsRef.current = applications; }, [applications]);
+  useEffect(() => { personalAppsRef.current = personalApps; }, [personalApps]);
+  useEffect(() => { coursesRef.current = courses; }, [courses]);
+  useEffect(() => { mentorshipsRef.current = mentorships; }, [mentorships]);
+  useEffect(() => { mentorAppsRef.current = mentorApps; }, [mentorApps]);
+
+  // BroadcastChannel for instant multi-tab same-browser synchronization
+  const broadcastSync = (key = 'ALL') => {
+    try {
+      if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+        const channel = new BroadcastChannel('tracker_sync_channel');
+        channel.postMessage({ key, timestamp: Date.now() });
+        channel.close();
+      }
+    } catch {
+      // silent fallback
+    }
+  };
+
+  // Centralized State Update + LocalStorage + Firebase Firestore Cloud Sync Helper
+  const updateCollection = (key, newData, setter, ref) => {
+    setter(newData);
+    ref.current = newData;
+    try {
+      localStorage.setItem(key, JSON.stringify(newData));
+    } catch (e) {
+      console.warn(`[LocalStorage Error] Key: ${key}`, e);
+    }
+    dbService.setItem(key, newData);
+    broadcastSync(key);
+  };
+
+  // Load latest live data from Firebase Cloud on startup & set up 2-second real-time polling
   useEffect(() => {
-    const fetchCloudData = async () => {
+    let isMounted = true;
+
+    const syncFromCloud = async () => {
       try {
-        const cloudUsers = await dbService.getItem('jt_users_db', null);
-        if (cloudUsers && Array.isArray(cloudUsers) && cloudUsers.length > 0) {
-          setUsersDb(cloudUsers);
+        const allCloud = await dbService.fetchAllCollections();
+        if (!isMounted) return;
+
+        if (allCloud.jt_users_db && JSON.stringify(allCloud.jt_users_db) !== JSON.stringify(usersDbRef.current)) {
+          setUsersDb(allCloud.jt_users_db);
+          usersDbRef.current = allCloud.jt_users_db;
+          localStorage.setItem('jt_users_db', JSON.stringify(allCloud.jt_users_db));
         }
-        const cloudJobs = await dbService.getItem('jt_jobs', null);
-        if (cloudJobs && Array.isArray(cloudJobs) && cloudJobs.length > 0) {
-          setJobs(cloudJobs);
+        if (allCloud.jt_jobs && JSON.stringify(allCloud.jt_jobs) !== JSON.stringify(jobsRef.current)) {
+          setJobs(allCloud.jt_jobs);
+          jobsRef.current = allCloud.jt_jobs;
+          localStorage.setItem('jt_jobs', JSON.stringify(allCloud.jt_jobs));
         }
-        const cloudApps = await dbService.getItem('jt_applications', null);
-        if (cloudApps && Array.isArray(cloudApps) && cloudApps.length > 0) {
-          setApplications(cloudApps);
+        if (allCloud.jt_applications && JSON.stringify(allCloud.jt_applications) !== JSON.stringify(applicationsRef.current)) {
+          setApplications(allCloud.jt_applications);
+          applicationsRef.current = allCloud.jt_applications;
+          localStorage.setItem('jt_applications', JSON.stringify(allCloud.jt_applications));
         }
-        const cloudMentorApps = await dbService.getItem('jt_mentor_apps', null);
-        if (cloudMentorApps && Array.isArray(cloudMentorApps) && cloudMentorApps.length > 0) {
-          setMentorApps(cloudMentorApps);
+        if (allCloud.jt_personal_apps && JSON.stringify(allCloud.jt_personal_apps) !== JSON.stringify(personalAppsRef.current)) {
+          setPersonalApps(allCloud.jt_personal_apps);
+          personalAppsRef.current = allCloud.jt_personal_apps;
+          localStorage.setItem('jt_personal_apps', JSON.stringify(allCloud.jt_personal_apps));
+        }
+        if (allCloud.jt_courses && JSON.stringify(allCloud.jt_courses) !== JSON.stringify(coursesRef.current)) {
+          setCourses(allCloud.jt_courses);
+          coursesRef.current = allCloud.jt_courses;
+          localStorage.setItem('jt_courses', JSON.stringify(allCloud.jt_courses));
+        }
+        if (allCloud.jt_mentorships && JSON.stringify(allCloud.jt_mentorships) !== JSON.stringify(mentorshipsRef.current)) {
+          setMentorships(allCloud.jt_mentorships);
+          mentorshipsRef.current = allCloud.jt_mentorships;
+          localStorage.setItem('jt_mentorships', JSON.stringify(allCloud.jt_mentorships));
+        }
+        if (allCloud.jt_mentor_apps && JSON.stringify(allCloud.jt_mentor_apps) !== JSON.stringify(mentorAppsRef.current)) {
+          setMentorApps(allCloud.jt_mentor_apps);
+          mentorAppsRef.current = allCloud.jt_mentor_apps;
+          localStorage.setItem('jt_mentor_apps', JSON.stringify(allCloud.jt_mentor_apps));
         }
       } catch (err) {
-        console.warn('[Cloud Initial Sync Error]:', err);
+        console.warn('[Cloud Sync Error]:', err);
       }
     };
-    fetchCloudData();
+
+    // Initial load
+    syncFromCloud();
+
+    // High-frequency Real-Time Polling (Every 2 Seconds) across devices
+    const pollInterval = setInterval(() => {
+      syncFromCloud();
+    }, 2000);
+
+    // Multi-Tab Sync on Same Device via BroadcastChannel
+    let channel;
+    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+      channel = new BroadcastChannel('tracker_sync_channel');
+      channel.onmessage = () => {
+        setJobs(getStoredItem('jt_jobs', jobsRef.current));
+        setApplications(getStoredItem('jt_applications', applicationsRef.current));
+        setPersonalApps(getStoredItem('jt_personal_apps', personalAppsRef.current));
+        setUsersDb(getStoredItem('jt_users_db', usersDbRef.current));
+        setCourses(getStoredItem('jt_courses', coursesRef.current));
+        setMentorships(getStoredItem('jt_mentorships', mentorshipsRef.current));
+        setMentorApps(getStoredItem('jt_mentor_apps', mentorAppsRef.current));
+      };
+    }
+
+    // Window storage listener fallback
+    const handleStorageEvent = (e) => {
+      if (!e.key) return;
+      if (e.key === 'jt_jobs') setJobs(getStoredItem('jt_jobs', jobsRef.current));
+      if (e.key === 'jt_applications') setApplications(getStoredItem('jt_applications', applicationsRef.current));
+      if (e.key === 'jt_personal_apps') setPersonalApps(getStoredItem('jt_personal_apps', personalAppsRef.current));
+      if (e.key === 'jt_users_db') setUsersDb(getStoredItem('jt_users_db', usersDbRef.current));
+      if (e.key === 'jt_courses') setCourses(getStoredItem('jt_courses', coursesRef.current));
+      if (e.key === 'jt_mentorships') setMentorships(getStoredItem('jt_mentorships', mentorshipsRef.current));
+      if (e.key === 'jt_mentor_apps') setMentorApps(getStoredItem('jt_mentor_apps', mentorAppsRef.current));
+    };
+
+    window.addEventListener('storage', handleStorageEvent);
+
+    return () => {
+      isMounted = false;
+      clearInterval(pollInterval);
+      if (channel) channel.close();
+      window.removeEventListener('storage', handleStorageEvent);
+    };
   }, []);
+
+  // Sync CurrentUser role if updated by Admin
+  useEffect(() => {
+    if (currentUser && currentUser.email) {
+      const dbUser = usersDb.find(u => u.email && u.email.toLowerCase() === currentUser.email.toLowerCase());
+      if (dbUser && dbUser.role !== currentUser.role) {
+        const updatedCurrent = { ...currentUser, role: dbUser.role };
+        setCurrentUser(updatedCurrent);
+        sessionStorage.setItem('currentUser_session', JSON.stringify(updatedCurrent));
+        if (localStorage.getItem('jt_remember_me') === 'true') {
+          localStorage.setItem('currentUser', JSON.stringify(updatedCurrent));
+        }
+      }
+    }
+  }, [usersDb]);
 
   // Auth Actions
   const login = (email, password, role, rememberMe = false) => {
-    const user = usersDb.find(u => u && u.email && u.email.toLowerCase() === (email || '').toLowerCase() && u.password === password && u.role === role);
+    const user = usersDbRef.current.find(u => u && u.email && u.email.toLowerCase() === (email || '').toLowerCase() && u.password === password && u.role === role);
     if (user) {
       setCurrentUser(user);
       sessionStorage.setItem('currentUser_session', JSON.stringify(user));
@@ -155,27 +268,23 @@ export const AppProvider = ({ children }) => {
   };
 
   const signup = (userData) => {
-    const existing = usersDb.find(u => u && u.email && u.email.toLowerCase() === (userData.email || '').toLowerCase());
+    const existing = usersDbRef.current.find(u => u && u.email && u.email.toLowerCase() === (userData.email || '').toLowerCase());
     if (existing) {
       return { success: false, message: 'Gmail address already registered.' };
     }
     const newUser = { ...userData };
-    const updatedUsers = [...usersDb, newUser];
-    setUsersDb(updatedUsers);
-    localStorage.setItem('jt_users_db', JSON.stringify(updatedUsers));
-    dbService.syncCollection('jt_users_db', updatedUsers);
+    const updatedUsers = [...usersDbRef.current, newUser];
+    updateCollection('jt_users_db', updatedUsers, setUsersDb, usersDbRef);
     return { success: true, user: newUser };
   };
 
   const resetPassword = (email, newPassword) => {
-    const user = usersDb.find(u => u && u.email && u.email.toLowerCase() === (email || '').toLowerCase());
+    const user = usersDbRef.current.find(u => u && u.email && u.email.toLowerCase() === (email || '').toLowerCase());
     if (!user) {
       return { success: false, message: 'Gmail address not found in system database.' };
     }
-    const updatedUsers = usersDb.map(u => (u && u.email && u.email.toLowerCase() === (email || '').toLowerCase()) ? { ...u, password: newPassword } : u);
-    setUsersDb(updatedUsers);
-    localStorage.setItem('jt_users_db', JSON.stringify(updatedUsers));
-    dbService.syncCollection('jt_users_db', updatedUsers);
+    const updatedUsers = usersDbRef.current.map(u => (u && u.email && u.email.toLowerCase() === (email || '').toLowerCase()) ? { ...u, password: newPassword } : u);
+    updateCollection('jt_users_db', updatedUsers, setUsersDb, usersDbRef);
     return { success: true, message: 'Password updated successfully! You can now sign in.' };
   };
 
@@ -187,31 +296,36 @@ export const AppProvider = ({ children }) => {
   };
 
   const deleteUser = (email) => {
-    setUsersDb(prev => prev.filter(u => u.email !== email));
+    const updatedUsers = usersDbRef.current.filter(u => u.email !== email);
+    updateCollection('jt_users_db', updatedUsers, setUsersDb, usersDbRef);
   };
 
   const updateUserRole = (email, newRole) => {
-    setUsersDb(prev => prev.map(u => u.email === email ? { ...u, role: newRole } : u));
+    const updatedUsers = usersDbRef.current.map(u => u.email === email ? { ...u, role: newRole } : u);
+    updateCollection('jt_users_db', updatedUsers, setUsersDb, usersDbRef);
   };
 
   // Job Actions
   const addJob = (job) => {
-    setJobs(prev => [...prev, { ...job, id: Date.now() }]);
+    const newJob = { ...job, id: Date.now() };
+    const updatedJobs = [...jobsRef.current, newJob];
+    updateCollection('jt_jobs', updatedJobs, setJobs, jobsRef);
   };
 
   const deleteJob = (jobId) => {
-    setJobs(prev => prev.filter(j => j.id !== jobId));
+    const updatedJobs = jobsRef.current.filter(j => String(j.id) !== String(jobId));
+    updateCollection('jt_jobs', updatedJobs, setJobs, jobsRef);
   };
 
-  // Application Actions (Applicant submitting for Job)
+  // Application Actions
   const applyForJob = (jobId, applicantName) => {
     const nameToUse = applicantName || currentUser?.name || currentUser?.username || 'User Demo';
-    const emailToUse = currentUser?.email || '';
-    const existing = applications.find(a => String(a.jobId) === String(jobId) && 
-      (a.applicantName === nameToUse || (emailToUse && a.applicantEmail === emailToUse) || (currentUser?.name && a.applicantName === currentUser.name))
+    const emailToUse = currentUser?.email || 'user@gmail.com';
+    const existing = applicationsRef.current.find(a => String(a.jobId) === String(jobId) && 
+      (a.applicantName === nameToUse || (emailToUse && a.applicantEmail === emailToUse))
     );
     if (!existing) {
-      setApplications(prev => [...prev, { 
+      const newApp = { 
         id: Date.now(), 
         jobId, 
         applicantName: nameToUse, 
@@ -219,40 +333,70 @@ export const AppProvider = ({ children }) => {
         status: 'Applied', 
         interviewSchedule: '', 
         feedback: '' 
-      }]);
+      };
+      const updatedApps = [...applicationsRef.current, newApp];
+      updateCollection('jt_applications', updatedApps, setApplications, applicationsRef);
     }
   };
 
+  const addApplicationRecord = (appData) => {
+    const newApp = { 
+      id: Date.now(), 
+      jobId: appData.jobId, 
+      applicantName: appData.applicantName || 'Applicant', 
+      applicantEmail: appData.applicantEmail || '',
+      status: appData.status || 'Applied', 
+      interviewSchedule: appData.interviewSchedule || '', 
+      feedback: appData.feedback || '' 
+    };
+    const updatedApps = [...applicationsRef.current, newApp];
+    updateCollection('jt_applications', updatedApps, setApplications, applicationsRef);
+    return newApp;
+  };
+
   const updateApplicationStatus = (appId, newStatus) => {
-    setApplications(prev => prev.map(app => String(app.id) === String(appId) ? { ...app, status: newStatus } : app));
+    const updatedApps = applicationsRef.current.map(app => String(app.id) === String(appId) ? { ...app, status: newStatus } : app);
+    updateCollection('jt_applications', updatedApps, setApplications, applicationsRef);
   };
 
   const updateApplicationDetails = (appId, updatedFields) => {
-    setApplications(prev => prev.map(app => String(app.id) === String(appId) ? { ...app, ...updatedFields } : app));
+    const updatedApps = applicationsRef.current.map(app => String(app.id) === String(appId) ? { ...app, ...updatedFields } : app);
+    updateCollection('jt_applications', updatedApps, setApplications, applicationsRef);
   };
 
   const deleteApplication = (id) => {
-    setApplications(prev => prev.filter(a => String(a.id) !== String(id)));
+    const updatedApps = applicationsRef.current.filter(a => String(a.id) !== String(id));
+    updateCollection('jt_applications', updatedApps, setApplications, applicationsRef);
   };
 
   // Personal Tracker Actions
   const addPersonalApp = (app) => {
-    setPersonalApps(prev => [...prev, { ...app, id: Date.now(), applicantName: currentUser?.name || 'user' }]);
+    const newApp = { 
+      ...app, 
+      id: Date.now(), 
+      applicantName: app.applicantName || currentUser?.name || 'User Demo',
+      applicantEmail: app.applicantEmail || currentUser?.email || 'user@gmail.com'
+    };
+    const updatedApps = [...personalAppsRef.current, newApp];
+    updateCollection('jt_personal_apps', updatedApps, setPersonalApps, personalAppsRef);
   };
 
   const updatePersonalAppStatus = (appId, newStatus) => {
-    setPersonalApps(prev => prev.map(app => app.id === appId ? { ...app, status: newStatus } : app));
+    const updatedApps = personalAppsRef.current.map(app => String(app.id) === String(appId) ? { ...app, status: newStatus } : app);
+    updateCollection('jt_personal_apps', updatedApps, setPersonalApps, personalAppsRef);
   };
 
   const editPersonalApp = (appId, updatedFields) => {
-    setPersonalApps(prev => prev.map(app => app.id === appId ? { ...app, ...updatedFields } : app));
+    const updatedApps = personalAppsRef.current.map(app => String(app.id) === String(appId) ? { ...app, ...updatedFields } : app);
+    updateCollection('jt_personal_apps', updatedApps, setPersonalApps, personalAppsRef);
   };
 
   const deletePersonalApp = (id) => {
-    setPersonalApps(prev => prev.filter(a => a.id !== id));
+    const updatedApps = personalAppsRef.current.filter(a => String(a.id) !== String(id));
+    updateCollection('jt_personal_apps', updatedApps, setPersonalApps, personalAppsRef);
   };
 
-  // Mentor Application to Offer Mentorship for an Internship / Job
+  // Mentor Application Actions
   const applyToMentorJob = (jobId, jobTitle, company, mentorshipFee, description) => {
     const newMentorApp = {
       id: Date.now(),
@@ -265,52 +409,81 @@ export const AppProvider = ({ children }) => {
       description: description || 'Mentorship program for internship candidates.',
       status: 'Pending'
     };
-    setMentorApps(prev => [...prev, newMentorApp]);
+    const updatedMentorApps = [...mentorAppsRef.current, newMentorApp];
+    updateCollection('jt_mentor_apps', updatedMentorApps, setMentorApps, mentorAppsRef);
+  };
+
+  const postMentorshipProgram = ({ jobTitle, company, mentorshipFee, description }) => {
+    const newMentorApp = {
+      id: Date.now(),
+      jobId: Date.now(),
+      jobTitle,
+      company: company || 'Career Mentorship',
+      mentorName: currentUser?.name || 'Mentor Demo',
+      mentorEmail: currentUser?.email || 'mentor@gmail.com',
+      mentorshipFee: mentorshipFee || 'Free',
+      description: description || 'Comprehensive mentorship program for students.',
+      status: 'Pending'
+    };
+    const updatedMentorApps = [...mentorAppsRef.current, newMentorApp];
+    updateCollection('jt_mentor_apps', updatedMentorApps, setMentorApps, mentorAppsRef);
   };
 
   const approveMentorApp = (id) => {
-    setMentorApps(prev => prev.map(m => m.id === id ? { ...m, status: 'Approved' } : m));
+    const updatedMentorApps = mentorAppsRef.current.map(m => String(m.id) === String(id) ? { ...m, status: 'Approved' } : m);
+    updateCollection('jt_mentor_apps', updatedMentorApps, setMentorApps, mentorAppsRef);
   };
 
   const rejectMentorApp = (id) => {
-    setMentorApps(prev => prev.map(m => m.id === id ? { ...m, status: 'Rejected' } : m));
+    const updatedMentorApps = mentorAppsRef.current.map(m => String(m.id) === String(id) ? { ...m, status: 'Rejected' } : m);
+    updateCollection('jt_mentor_apps', updatedMentorApps, setMentorApps, mentorAppsRef);
   };
 
-  // Student Mentee requesting an Approved Mentorship Program
+  // Student Mentee Actions
   const requestMentorshipProgram = (mentorAppId, mentorName, jobTitle, mentorshipFee) => {
     const menteeName = currentUser?.name || 'User Demo';
-    const existing = mentorships.find(m => m.mentorAppId === mentorAppId && m.menteeName === menteeName);
+    const menteeEmail = currentUser?.email || 'user@gmail.com';
+    const existing = mentorshipsRef.current.find(m => String(m.mentorAppId) === String(mentorAppId) && (m.menteeName === menteeName || m.menteeEmail === menteeEmail));
     if (!existing) {
-      setMentorships(prev => [...prev, {
+      const newMentorship = {
         id: Date.now(),
         mentorAppId,
         mentorName,
         menteeName,
+        menteeEmail,
         jobTitle,
         mentorshipFee,
-        status: 'Approved'
-      }]);
+        status: 'Pending'
+      };
+      const updatedMentorships = [...mentorshipsRef.current, newMentorship];
+      updateCollection('jt_mentorships', updatedMentorships, setMentorships, mentorshipsRef);
     }
   };
 
   // Mentor & Course Actions
   const addCourse = (course) => {
-    setCourses(prev => [...prev, { ...course, id: Date.now(), mentorName: currentUser?.name || 'Mentor' }]);
+    const newCourse = { ...course, id: Date.now(), mentorName: currentUser?.name || 'Mentor' };
+    const updatedCourses = [...coursesRef.current, newCourse];
+    updateCollection('jt_courses', updatedCourses, setCourses, coursesRef);
   };
 
   const requestMentorship = (courseId, mentorName, menteeName) => {
-    setMentorships(prev => [...prev, { id: Date.now(), courseId, mentorName, menteeName, status: 'Approved' }]);
+    const newMentorship = { id: Date.now(), courseId, mentorName, menteeName, status: 'Pending' };
+    const updatedMentorships = [...mentorshipsRef.current, newMentorship];
+    updateCollection('jt_mentorships', updatedMentorships, setMentorships, mentorshipsRef);
   };
 
   const updateMentorshipStatus = (mentorshipId, newStatus) => {
-    setMentorships(prev => prev.map(m => m.id === mentorshipId ? { ...m, status: newStatus } : m));
+    const updatedMentorships = mentorshipsRef.current.map(m => String(m.id) === String(mentorshipId) ? { ...m, status: newStatus } : m);
+    updateCollection('jt_mentorships', updatedMentorships, setMentorships, mentorshipsRef);
   };
 
   const deleteMentorship = (id) => {
-    setMentorships(prev => prev.filter(m => m.id !== id));
+    const updatedMentorships = mentorshipsRef.current.filter(m => String(m.id) !== String(id));
+    updateCollection('jt_mentorships', updatedMentorships, setMentorships, mentorshipsRef);
   };
 
-  // User Profile Update (Picture & Details)
+  // User Profile Update
   const updateUserProfile = (updatedFields) => {
     if (!currentUser) return;
     const updatedUser = { ...currentUser, ...updatedFields };
@@ -320,12 +493,8 @@ export const AppProvider = ({ children }) => {
       localStorage.setItem('currentUser', JSON.stringify(updatedUser));
     }
     
-    setUsersDb(prev => {
-      const updatedList = prev.map(u => u.email === currentUser.email ? { ...u, ...updatedFields } : u);
-      localStorage.setItem('jt_users_db', JSON.stringify(updatedList));
-      dbService.syncCollection('jt_users_db', updatedList);
-      return updatedList;
-    });
+    const updatedList = usersDbRef.current.map(u => u.email === currentUser.email ? { ...u, ...updatedFields } : u);
+    updateCollection('jt_users_db', updatedList, setUsersDb, usersDbRef);
   };
 
   return (
@@ -333,11 +502,11 @@ export const AppProvider = ({ children }) => {
       theme, toggleTheme,
       currentUser, login, signup, resetPassword, logout, usersDb, deleteUser, updateUserRole, updateUserProfile,
       jobs, addJob, deleteJob,
-      applications, applyForJob, updateApplicationStatus, updateApplicationDetails, deleteApplication,
+      applications, applyForJob, addApplicationRecord, updateApplicationStatus, updateApplicationDetails, deleteApplication,
       personalApps, addPersonalApp, updatePersonalAppStatus, editPersonalApp, deletePersonalApp,
       courses, addCourse,
       mentorships, requestMentorship, updateMentorshipStatus, deleteMentorship,
-      mentorApps, applyToMentorJob, approveMentorApp, rejectMentorApp, requestMentorshipProgram
+      mentorApps, applyToMentorJob, postMentorshipProgram, approveMentorApp, rejectMentorApp, requestMentorshipProgram
     }}>
       {children}
     </AppContext.Provider>
