@@ -1,4 +1,4 @@
-import { useContext, useState } from 'react';
+import { useContext, useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -18,13 +18,15 @@ import {
   CheckCircle2,
   Phone,
   CreditCard,
-  Mail
+  Mail,
+  KeyRound,
+  AlertCircle
 } from 'lucide-react';
 import { AppContext } from '../context/AppContext';
 import '../index.css';
 
 const Layout = () => {
-  const { currentUser, logout, theme, toggleTheme, updateUserProfile } = useContext(AppContext);
+  const { currentUser, logout, theme, toggleTheme, updateUserProfile, usersDb = [] } = useContext(AppContext);
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -32,10 +34,13 @@ const Layout = () => {
   // Edit Profile Modal State
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
   const [profileName, setProfileName] = useState('');
+  const [profileEmail, setProfileEmail] = useState('');
+  const [profilePassword, setProfilePassword] = useState('');
   const [profileMobile, setProfileMobile] = useState('');
   const [profileIdCard, setProfileIdCard] = useState('');
   const [avatarPreview, setAvatarPreview] = useState('');
   const [profileSaveSuccess, setProfileSaveSuccess] = useState(false);
+  const [profileErrorMsg, setProfileErrorMsg] = useState('');
 
   const handleLogout = () => {
     logout();
@@ -44,12 +49,22 @@ const Layout = () => {
 
   const openProfileModal = () => {
     setProfileName(currentUser?.name || '');
+    setProfileEmail(currentUser?.email || '');
+    setProfilePassword(currentUser?.password || '');
     setProfileMobile(currentUser?.mobile || '');
     setProfileIdCard(currentUser?.idCard || '');
     setAvatarPreview(currentUser?.avatarUrl || '');
     setProfileSaveSuccess(false);
+    setProfileErrorMsg('');
     setShowEditProfileModal(true);
   };
+
+  useEffect(() => {
+    const handleOpenModal = () => openProfileModal();
+    window.addEventListener('open-profile-modal', handleOpenModal);
+    return () => window.removeEventListener('open-profile-modal', handleOpenModal);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser]);
 
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
@@ -64,17 +79,39 @@ const Layout = () => {
 
   const handleSaveProfile = (e) => {
     e.preventDefault();
+    setProfileErrorMsg('');
+
+    if (!profileEmail.trim() || !profileEmail.toLowerCase().endsWith('@gmail.com')) {
+      setProfileErrorMsg('Please enter a valid Gmail address (@gmail.com)');
+      return;
+    }
+    if (!profilePassword || profilePassword.trim().length < 4) {
+      setProfileErrorMsg('Password must be at least 4 characters long.');
+      return;
+    }
+
+    const existing = usersDb.find(
+      u => u && u.email && u.email.toLowerCase() === profileEmail.trim().toLowerCase() && 
+           u.email.toLowerCase() !== (currentUser?.email || '').toLowerCase()
+    );
+    if (existing) {
+      setProfileErrorMsg('This Gmail address is already registered to another account.');
+      return;
+    }
+
     updateUserProfile({
-      name: profileName,
-      mobile: profileMobile,
-      idCard: profileIdCard,
+      name: profileName.trim(),
+      email: profileEmail.trim(),
+      password: profilePassword.trim(),
+      mobile: profileMobile.trim(),
+      idCard: profileIdCard.trim(),
       avatarUrl: avatarPreview
     });
     setProfileSaveSuccess(true);
     setTimeout(() => {
       setProfileSaveSuccess(false);
       setShowEditProfileModal(false);
-    }, 1200);
+    }, 1500);
   };
 
   // Extract initial for default avatar
@@ -363,9 +400,15 @@ const Layout = () => {
               </button>
             </div>
 
+            {profileErrorMsg && (
+              <div className="p-3 bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 rounded-xl text-xs font-bold flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" /> {profileErrorMsg}
+              </div>
+            )}
+
             {profileSaveSuccess && (
               <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 rounded-xl text-xs font-bold flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4" /> Profile details and picture updated successfully!
+                <CheckCircle2 className="w-4 h-4 shrink-0" /> Profile details, Gmail, password and photo updated successfully!
               </div>
             )}
 
@@ -410,18 +453,38 @@ const Layout = () => {
                 </div>
               </div>
 
-              {/* Email (Read only) */}
+              {/* Gmail Address (Editable) */}
               <div>
-                <label className="form-label text-xs font-bold text-slate-700 dark:text-slate-300">Gmail Address</label>
+                <label className="form-label text-xs font-bold text-slate-700 dark:text-slate-300">Gmail Address *</label>
                 <div className="relative flex items-center mt-1">
                   <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
                     <Mail className="w-4 h-4" />
                   </div>
                   <input
                     type="email"
-                    value={currentUser?.email || ''}
-                    disabled
-                    className="input-field w-full !pl-10 text-xs py-2.5 bg-slate-100 dark:bg-slate-950/50 text-slate-500 dark:text-slate-400 border-slate-300 dark:border-slate-800 opacity-80 cursor-not-allowed"
+                    value={profileEmail}
+                    onChange={(e) => setProfileEmail(e.target.value)}
+                    placeholder="user@gmail.com"
+                    className="input-field w-full !pl-10 text-xs py-2.5 bg-white dark:bg-slate-950/80 text-slate-900 dark:text-white border-slate-300 dark:border-slate-800"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Password (Editable) */}
+              <div>
+                <label className="form-label text-xs font-bold text-slate-700 dark:text-slate-300">Login Password *</label>
+                <div className="relative flex items-center mt-1">
+                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                    <KeyRound className="w-4 h-4" />
+                  </div>
+                  <input
+                    type="text"
+                    value={profilePassword}
+                    onChange={(e) => setProfilePassword(e.target.value)}
+                    placeholder="Enter new password"
+                    className="input-field w-full !pl-10 text-xs py-2.5 bg-white dark:bg-slate-950/80 text-slate-900 dark:text-white border-slate-300 dark:border-slate-800 font-mono"
+                    required
                   />
                 </div>
               </div>

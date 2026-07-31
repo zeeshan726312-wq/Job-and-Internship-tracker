@@ -8,7 +8,10 @@ import {
   CheckCircle2,
   Send,
   Sparkles,
-  Ban
+  Ban,
+  MessageSquare,
+  Users,
+  Trash2
 } from 'lucide-react';
 
 const MentorPanel = () => {
@@ -16,7 +19,9 @@ const MentorPanel = () => {
     mentorships, updateMentorshipStatus,
     currentUser,
     jobs,
-    mentorApps, applyToMentorJob, postMentorshipProgram
+    mentorApps, applyToMentorJob, postMentorshipProgram,
+    messages = [], sendMessage, deleteMessage,
+    usersDb = []
   } = useContext(AppContext);
   
   const mentorName = currentUser?.name || 'Mentor Demo';
@@ -37,6 +42,11 @@ const MentorPanel = () => {
   const [mentorshipNotes, setMentorshipNotes] = useState('');
   const [mentorAppSuccess, setMentorAppSuccess] = useState(false);
   const [declinedJobs, setDeclinedJobs] = useState({});
+
+  // Message Center State
+  const [showMsgModal, setShowMsgModal] = useState(false);
+  const [msgForm, setMsgForm] = useState({ subject: '', body: '', recipients: 'all', selectedEmails: [] });
+  const [msgSentSuccess, setMsgSentSuccess] = useState(false);
 
   const handleCreateProgram = (e) => {
     e.preventDefault();
@@ -332,7 +342,158 @@ const MentorPanel = () => {
         </div>
       </div>
 
-      {/* APPLY TO MENTOR INTERNSHIP MODAL */}
+      {/* MESSAGE CENTER */}
+      <div className="card bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
+          <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <MessageSquare className="w-5 h-5 text-emerald-500" /> Message Center
+          </h3>
+          <button
+            onClick={() => setShowMsgModal(true)}
+            className="btn bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2.5 px-4 flex items-center gap-2 border-0 keep-white shadow-md"
+          >
+            <Send className="w-3.5 h-3.5" /> Compose Message
+          </button>
+        </div>
+
+        {/* Sent Messages List */}
+        <div className="space-y-3">
+          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Sent Messages ({messages.filter(m => m.senderEmail === currentUser?.email).length})</h4>
+          {messages.filter(m => m.senderEmail === currentUser?.email).length === 0 ? (
+            <p className="text-xs text-slate-500 dark:text-slate-400 py-4 text-center">No messages sent yet. Compose your first message above!</p>
+          ) : (
+            messages.filter(m => m.senderEmail === currentUser?.email).map(msg => (
+              <div key={msg.id} className="p-4 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-xl space-y-1">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-bold text-sm text-slate-900 dark:text-white">{msg.subject}</span>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase border ${
+                      msg.recipients === 'all'
+                        ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/30'
+                        : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30'
+                    }`}>
+                      {msg.recipients === 'all' ? <><Users className="w-3 h-3 inline mr-0.5" /> All Users</> : `${msg.recipientEmails.length} Selected`}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => deleteMessage(msg.id)}
+                    className="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors"
+                    title="Delete message"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-2">{msg.body}</p>
+                <p className="text-[10px] text-slate-400">Sent {new Date(msg.sentAt).toLocaleString()} • Read by {msg.readBy.length} user(s)</p>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* COMPOSE MESSAGE MODAL */}
+      {showMsgModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="card bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 w-full max-w-lg shadow-2xl space-y-5 animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <MessageSquare className="w-5 h-5 text-emerald-500" /> Compose New Message
+              </h3>
+              <button onClick={() => { setShowMsgModal(false); setMsgForm({ subject: '', body: '', recipients: 'all', selectedEmails: [] }); }} className="p-1 text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-lg">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {msgSentSuccess && (
+              <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 rounded-xl text-xs font-bold flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4" /> Message sent successfully!
+              </div>
+            )}
+
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              if (!msgForm.subject.trim() || !msgForm.body.trim()) return;
+              sendMessage({
+                subject: msgForm.subject,
+                body: msgForm.body,
+                recipients: msgForm.recipients,
+                recipientEmails: msgForm.recipients === 'all' ? [] : msgForm.selectedEmails
+              });
+              setMsgSentSuccess(true);
+              setMsgForm({ subject: '', body: '', recipients: 'all', selectedEmails: [] });
+              setTimeout(() => { setMsgSentSuccess(false); setShowMsgModal(false); }, 1500);
+            }} className="space-y-4">
+              <div>
+                <label className="form-label text-xs font-bold text-slate-700 dark:text-slate-300">Subject *</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Important Update for All Mentees"
+                  value={msgForm.subject}
+                  onChange={e => setMsgForm(p => ({ ...p, subject: e.target.value }))}
+                  className="input-field w-full text-xs bg-white dark:bg-slate-950/80 border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="form-label text-xs font-bold text-slate-700 dark:text-slate-300">Recipients *</label>
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => setMsgForm(p => ({ ...p, recipients: 'all', selectedEmails: [] }))}
+                    className={`btn py-2 px-4 text-xs font-bold flex items-center gap-1.5 ${msgForm.recipients === 'all' ? 'bg-emerald-600 text-white keep-white border-0' : 'border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300'}`}>
+                    <Users className="w-3.5 h-3.5" /> All Users
+                  </button>
+                  <button type="button" onClick={() => setMsgForm(p => ({ ...p, recipients: 'selective' }))}
+                    className={`btn py-2 px-4 text-xs font-bold ${msgForm.recipients === 'selective' ? 'bg-emerald-600 text-white keep-white border-0' : 'border border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300'}`}>
+                    Select Users
+                  </button>
+                </div>
+              </div>
+
+              {msgForm.recipients === 'selective' && (
+                <div className="space-y-2">
+                  <label className="form-label text-xs font-bold text-slate-700 dark:text-slate-300">Select Recipients</label>
+                  <div className="max-h-36 overflow-y-auto space-y-1.5 pr-1">
+                    {usersDb.filter(u => u.role === 'user').map(u => (
+                      <label key={u.email} className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="accent-emerald-600"
+                          checked={msgForm.selectedEmails.includes(u.email)}
+                          onChange={e => setMsgForm(p => ({
+                            ...p,
+                            selectedEmails: e.target.checked
+                              ? [...p.selectedEmails, u.email]
+                              : p.selectedEmails.filter(em => em !== u.email)
+                          }))}
+                        />
+                        <span className="text-xs text-slate-700 dark:text-slate-300 font-medium">{u.name} <span className="text-slate-400">({u.email})</span></span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label className="form-label text-xs font-bold text-slate-700 dark:text-slate-300">Message *</label>
+                <textarea
+                  placeholder="Write your message here..."
+                  value={msgForm.body}
+                  onChange={e => setMsgForm(p => ({ ...p, body: e.target.value }))}
+                  className="form-textarea text-xs bg-white dark:bg-slate-950/80 border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white min-h-[110px]"
+                  required
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
+                <button type="button" onClick={() => setShowMsgModal(false)} className="btn secondary py-2.5 px-4 text-xs font-bold">Cancel</button>
+                <button type="submit" className="btn bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 px-5 text-xs font-bold shadow-lg keep-white border-0 flex items-center gap-2">
+                  <Send className="w-3.5 h-3.5" /> Send Message
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
       {selectedJob && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
           <div className="card bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 w-full max-w-md shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">

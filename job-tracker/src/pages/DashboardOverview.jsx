@@ -14,7 +14,9 @@ import {
   Sparkles,
   Award,
   Building2,
-  X
+  X,
+  MessageSquare,
+  Bell
 } from 'lucide-react';
 
 const StatusIcon = ({ status }) => {
@@ -30,7 +32,7 @@ const StatusIcon = ({ status }) => {
 };
 
 const DashboardOverview = () => {
-  const { jobs = [], applications = [], personalApps = [], currentUser, applyForJob, mentorApps = [], mentorships = [], requestMentorshipProgram } = useContext(AppContext);
+  const { jobs = [], applications = [], personalApps = [], currentUser, applyForJob, mentorApps = [], mentorships = [], requestMentorshipProgram, messages = [], markMessageRead } = useContext(AppContext);
   const navigate = useNavigate();
   const [applySuccessMsg, setApplySuccessMsg] = useState('');
   const [selectedJobDetail, setSelectedJobDetail] = useState(null);
@@ -396,6 +398,57 @@ const DashboardOverview = () => {
           )}
         </div>
       </div>
+
+      {/* SECTION 4: INBOX — Messages from Mentors & Employers */}
+      {(() => {
+        const email = currentUser?.email;
+        const myMessages = messages.filter(msg =>
+          msg.recipients === 'all' || msg.recipientEmails.includes(email)
+        );
+        const unread = myMessages.filter(msg => !msg.readBy.includes(email)).length;
+        return (
+          <div className="card bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="flex items-center gap-2 text-slate-900 dark:text-white font-bold text-base">
+                <MessageSquare className="w-5 h-5 text-indigo-500" /> Inbox
+              </h3>
+              {unread > 0 && (
+                <span className="flex items-center gap-1 text-xs bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/30 px-3 py-1 rounded-full font-bold animate-pulse">
+                  <Bell className="w-3.5 h-3.5" /> {unread} New
+                </span>
+              )}
+            </div>
+            <div className="space-y-3">
+              {myMessages.length === 0 ? (
+                <p className="text-xs text-slate-500 dark:text-slate-400 py-4 text-center">No messages yet. Messages from mentors and employers will appear here.</p>
+              ) : (
+                myMessages.map(msg => {
+                  const isUnread = !msg.readBy.includes(email);
+                  return (
+                    <div
+                      key={msg.id}
+                      onClick={() => isUnread && markMessageRead(msg.id)}
+                      className={`p-4 rounded-xl border cursor-pointer transition-all ${
+                        isUnread
+                          ? 'bg-indigo-500/5 border-indigo-500/30 hover:bg-indigo-500/10'
+                          : 'bg-slate-50 dark:bg-slate-950/80 border-slate-200 dark:border-slate-800'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        {isUnread && <span className="w-2 h-2 rounded-full bg-indigo-500 inline-block"></span>}
+                        <span className={`font-bold text-sm ${isUnread ? 'text-indigo-700 dark:text-indigo-300' : 'text-slate-900 dark:text-white'}`}>{msg.subject}</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-medium capitalize">{msg.senderRole}</span>
+                      </div>
+                      <p className="text-xs text-slate-600 dark:text-slate-300">{msg.body}</p>
+                      <p className="text-[10px] text-slate-400 mt-1.5">From: <span className="font-semibold">{msg.senderName}</span> &bull; {new Date(msg.sentAt).toLocaleString()}</p>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* FULL JOB DETAILS MODAL */}
       {selectedJobDetail && (

@@ -1,6 +1,7 @@
 import { createContext, useState, useEffect, useRef } from 'react';
 import { dbService } from '../services/dbService';
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const AppContext = createContext();
 
 // Mock Initial Data (Fallback if cloud & localStorage are empty)
@@ -57,15 +58,17 @@ const getStoredItem = (key, fallback, storage = localStorage) => {
 };
 
 export const AppProvider = ({ children }) => {
-  // Theme State
-  const [theme, setTheme] = useState(() => getStoredItem('jt_theme', 'dark'));
+  // Theme State — read directly (not via JSON.parse, as 'dark'/'light' are plain strings)
+  const [theme, setTheme] = useState(() => {
+    try { return localStorage.getItem('jt_theme') || 'dark'; } catch { return 'dark'; }
+  });
 
   const toggleTheme = () => {
     setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
   };
 
   useEffect(() => {
-    localStorage.setItem('jt_theme', theme);
+    try { localStorage.setItem('jt_theme', theme); } catch { /* ignore */ }
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
       document.documentElement.classList.remove('light');
@@ -95,6 +98,7 @@ export const AppProvider = ({ children }) => {
   const [courses, setCourses] = useState(() => getStoredItem('jt_courses', initialCourses) || initialCourses);
   const [mentorships, setMentorships] = useState(() => getStoredItem('jt_mentorships', initialMentorships) || initialMentorships);
   const [mentorApps, setMentorApps] = useState(() => getStoredItem('jt_mentor_apps', initialMentorApps) || initialMentorApps);
+  const [messages, setMessages] = useState(() => getStoredItem('jt_messages', []) || []);
 
   // Refs to eliminate stale closure issues in interval callbacks
   const usersDbRef = useRef(usersDb);
@@ -104,6 +108,7 @@ export const AppProvider = ({ children }) => {
   const coursesRef = useRef(courses);
   const mentorshipsRef = useRef(mentorships);
   const mentorAppsRef = useRef(mentorApps);
+  const messagesRef = useRef(messages);
 
   // Keep refs synchronized with state
   useEffect(() => { usersDbRef.current = usersDb; }, [usersDb]);
@@ -113,6 +118,7 @@ export const AppProvider = ({ children }) => {
   useEffect(() => { coursesRef.current = courses; }, [courses]);
   useEffect(() => { mentorshipsRef.current = mentorships; }, [mentorships]);
   useEffect(() => { mentorAppsRef.current = mentorApps; }, [mentorApps]);
+  useEffect(() => { messagesRef.current = messages; }, [messages]);
 
   // BroadcastChannel for instant multi-tab same-browser synchronization
   const broadcastSync = (key = 'ALL') => {
@@ -153,6 +159,25 @@ export const AppProvider = ({ children }) => {
           setUsersDb(allCloud.jt_users_db);
           usersDbRef.current = allCloud.jt_users_db;
           localStorage.setItem('jt_users_db', JSON.stringify(allCloud.jt_users_db));
+
+          // Sync currentUser's profile (avatar, name, etc.) from the updated db
+          const sessionUser = sessionStorage.getItem('currentUser_session');
+          if (sessionUser) {
+            try {
+              const parsed = JSON.parse(sessionUser);
+              const freshProfile = allCloud.jt_users_db.find(u => u.email === parsed.email);
+              if (freshProfile) {
+                const merged = { ...parsed, ...freshProfile };
+                if (JSON.stringify(merged) !== sessionUser) {
+                  setCurrentUser(merged);
+                  sessionStorage.setItem('currentUser_session', JSON.stringify(merged));
+                  if (localStorage.getItem('jt_remember_me') === 'true') {
+                    localStorage.setItem('currentUser', JSON.stringify(merged));
+                  }
+                }
+              }
+            } catch { /* ignore JSON parse errors */ }
+          }
         }
         if (allCloud.jt_jobs && JSON.stringify(allCloud.jt_jobs) !== JSON.stringify(jobsRef.current)) {
           setJobs(allCloud.jt_jobs);
@@ -184,6 +209,11 @@ export const AppProvider = ({ children }) => {
           mentorAppsRef.current = allCloud.jt_mentor_apps;
           localStorage.setItem('jt_mentor_apps', JSON.stringify(allCloud.jt_mentor_apps));
         }
+        if (allCloud.jt_messages && JSON.stringify(allCloud.jt_messages) !== JSON.stringify(messagesRef.current)) {
+          setMessages(allCloud.jt_messages);
+          messagesRef.current = allCloud.jt_messages;
+          localStorage.setItem('jt_messages', JSON.stringify(allCloud.jt_messages));
+        }
       } catch (err) {
         console.warn('[Cloud Sync Error]:', err);
       }
@@ -209,6 +239,7 @@ export const AppProvider = ({ children }) => {
         setCourses(getStoredItem('jt_courses', coursesRef.current));
         setMentorships(getStoredItem('jt_mentorships', mentorshipsRef.current));
         setMentorApps(getStoredItem('jt_mentor_apps', mentorAppsRef.current));
+        setMessages(getStoredItem('jt_messages', messagesRef.current));
       };
     }
 
@@ -222,6 +253,7 @@ export const AppProvider = ({ children }) => {
       if (e.key === 'jt_courses') setCourses(getStoredItem('jt_courses', coursesRef.current));
       if (e.key === 'jt_mentorships') setMentorships(getStoredItem('jt_mentorships', mentorshipsRef.current));
       if (e.key === 'jt_mentor_apps') setMentorApps(getStoredItem('jt_mentor_apps', mentorAppsRef.current));
+      if (e.key === 'jt_messages') setMessages(getStoredItem('jt_messages', messagesRef.current));
     };
 
     window.addEventListener('storage', handleStorageEvent);
@@ -240,6 +272,7 @@ export const AppProvider = ({ children }) => {
       const dbUser = usersDb.find(u => u.email && u.email.toLowerCase() === currentUser.email.toLowerCase());
       if (dbUser && dbUser.role !== currentUser.role) {
         const updatedCurrent = { ...currentUser, role: dbUser.role };
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setCurrentUser(updatedCurrent);
         sessionStorage.setItem('currentUser_session', JSON.stringify(updatedCurrent));
         if (localStorage.getItem('jt_remember_me') === 'true') {
@@ -247,6 +280,7 @@ export const AppProvider = ({ children }) => {
         }
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [usersDb]);
 
   // Auth Actions
@@ -486,6 +520,7 @@ export const AppProvider = ({ children }) => {
   // User Profile Update
   const updateUserProfile = (updatedFields) => {
     if (!currentUser) return;
+    const oldEmail = currentUser.email;
     const updatedUser = { ...currentUser, ...updatedFields };
     setCurrentUser(updatedUser);
     sessionStorage.setItem('currentUser_session', JSON.stringify(updatedUser));
@@ -493,8 +528,45 @@ export const AppProvider = ({ children }) => {
       localStorage.setItem('currentUser', JSON.stringify(updatedUser));
     }
     
-    const updatedList = usersDbRef.current.map(u => u.email === currentUser.email ? { ...u, ...updatedFields } : u);
+    const updatedList = usersDbRef.current.map(u => 
+      (u && u.email && u.email.toLowerCase() === (oldEmail || '').toLowerCase()) 
+        ? { ...u, ...updatedFields } 
+        : u
+    );
     updateCollection('jt_users_db', updatedList, setUsersDb, usersDbRef);
+  };
+
+  // ── MESSAGING ──
+  const sendMessage = ({ subject, body, recipients, recipientEmails }) => {
+    const newMsg = {
+      id: Date.now(),
+      senderName: currentUser?.name || 'Sender',
+      senderEmail: currentUser?.email || '',
+      senderRole: currentUser?.role || 'user',
+      subject: subject || '(No Subject)',
+      body,
+      recipients,       // 'all' | 'selective'
+      recipientEmails: recipientEmails || [],
+      sentAt: new Date().toISOString(),
+      readBy: []
+    };
+    const updated = [newMsg, ...messagesRef.current];
+    updateCollection('jt_messages', updated, setMessages, messagesRef);
+  };
+
+  const markMessageRead = (msgId) => {
+    const email = currentUser?.email;
+    const updated = messagesRef.current.map(m =>
+      String(m.id) === String(msgId) && !m.readBy.includes(email)
+        ? { ...m, readBy: [...m.readBy, email] }
+        : m
+    );
+    updateCollection('jt_messages', updated, setMessages, messagesRef);
+  };
+
+  const deleteMessage = (msgId) => {
+    const updated = messagesRef.current.filter(m => String(m.id) !== String(msgId));
+    updateCollection('jt_messages', updated, setMessages, messagesRef);
   };
 
   return (
@@ -506,7 +578,8 @@ export const AppProvider = ({ children }) => {
       personalApps, addPersonalApp, updatePersonalAppStatus, editPersonalApp, deletePersonalApp,
       courses, addCourse,
       mentorships, requestMentorship, updateMentorshipStatus, deleteMentorship,
-      mentorApps, applyToMentorJob, postMentorshipProgram, approveMentorApp, rejectMentorApp, requestMentorshipProgram
+      mentorApps, applyToMentorJob, postMentorshipProgram, approveMentorApp, rejectMentorApp, requestMentorshipProgram,
+      messages, sendMessage, markMessageRead, deleteMessage
     }}>
       {children}
     </AppContext.Provider>

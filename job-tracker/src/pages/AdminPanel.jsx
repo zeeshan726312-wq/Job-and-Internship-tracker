@@ -63,6 +63,9 @@ const AdminPanel = () => {
     idCard: '12345-1234567-1'
   });
 
+  // Change Admin Email/Password State
+
+
   // Admin Public Job Form State with All Compulsory Details
   const [adminJob, setAdminJob] = useState({
     title: '',
@@ -995,6 +998,7 @@ const AdminPanel = () => {
           </div>
         </div>
       )}
+
     </div>
   );
 };
