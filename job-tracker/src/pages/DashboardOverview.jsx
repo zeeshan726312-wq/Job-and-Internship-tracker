@@ -16,7 +16,8 @@ import {
   Building2,
   X,
   MessageSquare,
-  Bell
+  Bell,
+  ExternalLink
 } from 'lucide-react';
 
 const StatusIcon = ({ status }) => {
@@ -50,8 +51,16 @@ const DashboardOverview = () => {
 
   const handleDirectApply = (job) => {
     const applicantName = currentUser?.name || currentUser?.username || 'User';
-    applyForJob(job.id, applicantName);
-    setApplySuccessMsg(`Application for "${job.title}" submitted successfully! Real-time status update saved.`);
+    if (job.isExternal && job.externalUrl) {
+      // Open external link in new tab
+      window.open(job.externalUrl, '_blank', 'noopener,noreferrer');
+      // Also track it in the pipeline
+      applyForJob(job.id, applicantName);
+      setApplySuccessMsg(`Opened "${job.title}" external page! Application tracked in your pipeline.`);
+    } else {
+      applyForJob(job.id, applicantName);
+      setApplySuccessMsg(`Application for "${job.title}" submitted successfully! Real-time status update saved.`);
+    }
     setTimeout(() => setApplySuccessMsg(''), 4000);
   };
 
@@ -215,7 +224,7 @@ const DashboardOverview = () => {
                     >
                       <div className="flex justify-between items-start gap-3">
                         <div className="cursor-pointer" onClick={() => setSelectedJobDetail(job)}>
-                          <h4 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2 hover:text-indigo-500 transition-colors">
+                          <h4 className="font-bold text-sm text-slate-900 dark:text-white flex items-center flex-wrap gap-2 hover:text-indigo-500 transition-colors">
                             {job.title}
                             <span className="text-[10px] bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 px-2.5 py-0.5 rounded-full font-bold border border-indigo-500/20">
                               {job.type}
@@ -223,6 +232,11 @@ const DashboardOverview = () => {
                             {isAdminJob && (
                               <span className="text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded font-extrabold border border-emerald-500/30">
                                 Official Admin Listing
+                              </span>
+                            )}
+                            {job.isExternal && (
+                              <span className="text-[10px] bg-sky-500/10 text-sky-600 dark:text-sky-400 px-2 py-0.5 rounded font-extrabold border border-sky-500/30 flex items-center gap-1">
+                                <ExternalLink className="w-3 h-3" /> External Link
                               </span>
                             )}
                           </h4>
@@ -237,16 +251,26 @@ const DashboardOverview = () => {
                           >
                             Details
                           </button>
-                          <button
-                            onClick={() => handleDirectApply(job)}
-                            className={`btn py-1.5 px-3.5 text-xs font-bold transition-all ${
-                              hasApplied ? 'secondary opacity-70 cursor-default' : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md border-0 keep-white'
-                            }`}
-                            disabled={hasApplied}
-                          >
-                            <Send className="w-3.5 h-3.5" />
-                            {hasApplied ? 'Applied' : 'Apply Now'}
-                          </button>
+                          {job.isExternal ? (
+                            <button
+                              onClick={() => handleDirectApply(job)}
+                              className="btn py-1.5 px-3.5 text-xs font-bold transition-all bg-sky-600 hover:bg-sky-700 text-white shadow-md border-0 keep-white flex items-center gap-1.5"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5" />
+                              {hasApplied ? 'Visit Again ↗' : 'Apply on Site ↗'}
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleDirectApply(job)}
+                              className={`btn py-1.5 px-3.5 text-xs font-bold transition-all ${
+                                hasApplied ? 'secondary opacity-70 cursor-default' : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md border-0 keep-white'
+                              }`}
+                              disabled={hasApplied}
+                            >
+                              <Send className="w-3.5 h-3.5" />
+                              {hasApplied ? 'Applied' : 'Apply Now'}
+                            </button>
+                          )}
                         </div>
                       </div>
 
@@ -500,6 +524,26 @@ const DashboardOverview = () => {
               </div>
             </div>
 
+            {/* External Job Callout */}
+            {selectedJobDetail.isExternal && selectedJobDetail.externalUrl && (
+              <div className="p-4 bg-sky-500/10 border border-sky-500/30 rounded-2xl space-y-2">
+                <div className="flex items-center gap-2">
+                  <ExternalLink className="w-4 h-4 text-sky-500 shrink-0" />
+                  <span className="text-xs font-extrabold text-sky-700 dark:text-sky-300">External Application Page</span>
+                </div>
+                <p className="text-xs text-sky-600 dark:text-sky-400 font-medium">This is an external job posting. Clicking Apply will open the employer's official page in a new tab.</p>
+                <a
+                  href={selectedJobDetail.externalUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-xs font-bold text-sky-600 dark:text-sky-400 underline hover:text-sky-500 break-all"
+                >
+                  <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+                  {selectedJobDetail.externalUrl}
+                </a>
+              </div>
+            )}
+
             {/* Full Requirements & Description */}
             <div className="space-y-2">
               <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">
@@ -518,26 +562,39 @@ const DashboardOverview = () => {
               >
                 Close
               </button>
-              {(() => {
-                const hasApplied = myApplications.some(app => app.jobId === selectedJobDetail.id);
-                return (
-                  <button
-                    onClick={() => {
-                      handleDirectApply(selectedJobDetail);
-                      setSelectedJobDetail(null);
-                    }}
-                    className={`btn py-2.5 px-5 text-xs font-bold transition-all ${
-                      hasApplied 
-                        ? 'bg-slate-200 dark:bg-slate-800 text-slate-500 cursor-default border-0' 
-                        : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-500/25 border-0 keep-white'
-                    }`}
-                    disabled={hasApplied}
-                  >
-                    <Send className="w-4 h-4" />
-                    {hasApplied ? '✓ Already Applied' : 'Submit 1-Click Application'}
-                  </button>
-                );
-              })()}
+              {selectedJobDetail.isExternal ? (
+                <button
+                  onClick={() => {
+                    handleDirectApply(selectedJobDetail);
+                    setSelectedJobDetail(null);
+                  }}
+                  className="btn py-2.5 px-5 text-xs font-bold bg-sky-600 hover:bg-sky-700 text-white shadow-lg shadow-sky-500/25 border-0 keep-white flex items-center gap-2"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  Apply on External Site ↗
+                </button>
+              ) : (
+                (() => {
+                  const hasApplied = myApplications.some(app => app.jobId === selectedJobDetail.id);
+                  return (
+                    <button
+                      onClick={() => {
+                        handleDirectApply(selectedJobDetail);
+                        setSelectedJobDetail(null);
+                      }}
+                      className={`btn py-2.5 px-5 text-xs font-bold transition-all ${
+                        hasApplied 
+                          ? 'bg-slate-200 dark:bg-slate-800 text-slate-500 cursor-default border-0' 
+                          : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-500/25 border-0 keep-white'
+                      }`}
+                      disabled={hasApplied}
+                    >
+                      <Send className="w-4 h-4" />
+                      {hasApplied ? '✓ Already Applied' : 'Submit 1-Click Application'}
+                    </button>
+                  );
+                })()
+              )}
             </div>
           </div>
         </div>

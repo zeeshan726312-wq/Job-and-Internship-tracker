@@ -126,7 +126,9 @@ const ApplicationsList = () => {
         type: job?.type || 'Job',
         status: app.status || 'Applied',
         deadline: job?.deadline || 'N/A',
-        link: '#',
+        link: job?.externalUrl || '#',
+        isExternal: job?.isExternal || false,
+        externalUrl: job?.externalUrl || '',
         interviewSchedule: app.interviewSchedule || '',
         feedback: app.feedback || ''
       };
@@ -359,7 +361,14 @@ const ApplicationsList = () => {
                         </div>
 
                         <div>
-                          <h4 className="font-bold text-xs text-slate-900 dark:text-white leading-snug">{app.title}</h4>
+                          <h4 className="font-bold text-xs text-slate-900 dark:text-white leading-snug flex flex-wrap items-center gap-1.5">
+                            {app.title}
+                            {app.isExternal && (
+                              <span className="text-[9px] bg-sky-500/20 text-sky-400 px-1.5 py-0.5 rounded font-bold border border-sky-500/30 flex items-center gap-1">
+                                <ExternalLink className="w-2.5 h-2.5" /> External
+                              </span>
+                            )}
+                          </h4>
                           <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">{app.company}</p>
                         </div>
 
@@ -434,6 +443,11 @@ const ApplicationsList = () => {
                       <span className="text-[11px] px-2 py-0.5 rounded bg-slate-950 text-slate-400 border border-slate-800">
                         {app.source} Source
                       </span>
+                      {app.isExternal && (
+                        <span className="text-[10px] bg-sky-500/20 text-sky-400 px-2 py-0.5 rounded font-bold border border-sky-500/30 flex items-center gap-1">
+                          <ExternalLink className="w-3 h-3" /> External Link
+                        </span>
+                      )}
                     </div>
 
                     <p className="text-xs font-semibold text-slate-400 flex items-center gap-3 flex-wrap">
@@ -480,9 +494,11 @@ const ApplicationsList = () => {
                         href={app.link}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="btn secondary py-1.5 px-3 text-xs flex items-center gap-1"
+                        className="btn py-1.5 px-3 text-xs flex items-center gap-1.5 bg-sky-600 hover:bg-sky-700 text-white border-0 keep-white"
+                        title="Open External Job Posting"
                       >
-                        <ExternalLink className="w-3.5 h-3.5" /> Link
+                        <ExternalLink className="w-3.5 h-3.5" /> 
+                        {app.isExternal ? 'Visit External Job' : 'Link'}
                       </a>
                     )}
                   </div>

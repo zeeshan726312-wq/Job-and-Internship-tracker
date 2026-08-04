@@ -13,7 +13,8 @@ import {
   Search,
   PlusCircle,
   X,
-  UserCheck
+  UserCheck,
+  ExternalLink
 } from 'lucide-react';
 
 const AdminPanel = () => {
@@ -36,6 +37,7 @@ const AdminPanel = () => {
   const [activeTab, setActiveTab] = useState('overview'); // overview, users, jobs, applications, hired, mentor_approval
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [showAddJobModal, setShowAddJobModal] = useState(false);
+  const [jobPostingMode, setJobPostingMode] = useState('standard'); // 'standard' | 'external'
   
   const [userSearch, setUserSearch] = useState('');
   const [modalTitle, setModalTitle] = useState('Add New Administrator Account');
@@ -76,7 +78,8 @@ const AdminPanel = () => {
     salary: '',
     status: 'Open',
     deadline: '',
-    requirements: ''
+    requirements: '',
+    externalUrl: ''
   });
 
   const [formError, setFormError] = useState('');
@@ -143,24 +146,55 @@ const AdminPanel = () => {
     setFormError('');
     setFormSuccess('');
 
-    if (!adminJob.title.trim() || !adminJob.company.trim() || !adminJob.deadline || !adminJob.requirements.trim() || !adminJob.salary.trim()) {
-      setFormError('Please fill in all compulsory job fields (Title, Company, Category, Work Mode, Experience Level, Salary/Stipend, Deadline, Requirements).');
-      return;
+    if (jobPostingMode === 'external') {
+      if (!adminJob.title.trim() || !adminJob.externalUrl.trim()) {
+        setFormError('Please enter both the Job Title and the External Job Link (URL).');
+        return;
+      }
+
+      let formattedUrl = adminJob.externalUrl.trim();
+      if (!/^https?:\/\//i.test(formattedUrl)) {
+        formattedUrl = 'https://' + formattedUrl;
+      }
+
+      addJob({
+        ...adminJob,
+        title: adminJob.title.trim(),
+        company: adminJob.company.trim() || 'External Employer',
+        type: adminJob.type || 'Job',
+        workMode: adminJob.workMode || 'Remote',
+        experienceLevel: adminJob.experienceLevel || 'Entry Level',
+        salary: adminJob.salary.trim() || 'Competitive',
+        deadline: adminJob.deadline || '',
+        requirements: adminJob.requirements.trim() || 'Apply directly on the external job posting page.',
+        externalUrl: formattedUrl,
+        isExternal: true,
+        postedBy: 'Admin',
+        status: 'Open'
+      });
+
+      setFormSuccess(`External job opportunity "${adminJob.title}" published! Candidates will be directed to ${formattedUrl}`);
+    } else {
+      if (!adminJob.title.trim() || !adminJob.company.trim() || !adminJob.deadline || !adminJob.requirements.trim() || !adminJob.salary.trim()) {
+        setFormError('Please fill in all compulsory job fields (Title, Company, Category, Work Mode, Experience Level, Salary/Stipend, Deadline, Requirements).');
+        return;
+      }
+
+      addJob({
+        ...adminJob,
+        title: adminJob.title.trim(),
+        company: adminJob.company.trim() || 'System Admin',
+        type: adminJob.type || 'Job',
+        workMode: adminJob.workMode || 'Remote',
+        experienceLevel: adminJob.experienceLevel || 'Entry Level',
+        salary: adminJob.salary.trim(),
+        postedBy: 'Admin',
+        status: 'Open'
+      });
+
+      setFormSuccess(`"${adminJob.title}" published successfully to all panels! Open for all candidates to apply.`);
     }
 
-    addJob({
-      ...adminJob,
-      title: adminJob.title.trim(),
-      company: adminJob.company.trim() || 'System Admin',
-      type: adminJob.type || 'Job',
-      workMode: adminJob.workMode || 'Remote',
-      experienceLevel: adminJob.experienceLevel || 'Entry Level',
-      salary: adminJob.salary.trim(),
-      postedBy: 'Admin',
-      status: 'Open'
-    });
-
-    setFormSuccess(`"${adminJob.title}" published successfully to all panels! Open for all candidates to apply.`);
     setAdminJob({
       title: '',
       company: 'System Admin',
@@ -170,7 +204,8 @@ const AdminPanel = () => {
       salary: '',
       status: 'Open',
       deadline: '',
-      requirements: ''
+      requirements: '',
+      externalUrl: ''
     });
 
     setTimeout(() => {
@@ -184,6 +219,44 @@ const AdminPanel = () => {
     u.email?.toLowerCase().includes(userSearch.toLowerCase()) ||
     u.role?.toLowerCase().includes(userSearch.toLowerCase())
   );
+
+  const openAddStandardJobModal = () => {
+    setFormError('');
+    setFormSuccess('');
+    setJobPostingMode('standard');
+    setAdminJob({
+      title: '',
+      company: 'System Admin',
+      type: 'Job',
+      workMode: 'Remote',
+      experienceLevel: 'Entry Level',
+      salary: '',
+      status: 'Open',
+      deadline: '',
+      requirements: '',
+      externalUrl: ''
+    });
+    setShowAddJobModal(true);
+  };
+
+  const openAddExternalJobModal = () => {
+    setFormError('');
+    setFormSuccess('');
+    setJobPostingMode('external');
+    setAdminJob({
+      title: '',
+      company: 'System Admin',
+      type: 'Job',
+      workMode: 'Remote',
+      experienceLevel: 'Entry Level',
+      salary: '',
+      status: 'Open',
+      deadline: '',
+      requirements: '',
+      externalUrl: ''
+    });
+    setShowAddJobModal(true);
+  };
 
   return (
     <div className="panel-container space-y-8 font-sans">
@@ -205,28 +278,22 @@ const AdminPanel = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
-            {/* DEDICATED POST PUBLIC JOB BUTTON */}
+            {/* DEDICATED POST STANDARD JOB BUTTON */}
             <button
-              onClick={() => {
-                setFormError('');
-                setFormSuccess('');
-                setAdminJob({
-                  title: '',
-                  company: 'System Admin',
-                  type: 'Job',
-                  workMode: 'Remote',
-                  experienceLevel: 'Entry Level',
-                  salary: '',
-                  status: 'Open',
-                  deadline: '',
-                  requirements: ''
-                });
-                setShowAddJobModal(true);
-              }}
-              className="btn bg-white text-emerald-900 hover:bg-slate-100 py-2.5 px-4 text-xs font-extrabold shadow-xl flex items-center gap-2 border-0"
-              title="Post New Public Opportunity for All Users"
+              onClick={openAddStandardJobModal}
+              className="btn bg-white text-emerald-900 hover:bg-slate-100 py-2.5 px-4 text-xs font-extrabold shadow-xl flex items-center gap-1.5 border-0"
+              title="Post New Standard Opportunity for All Users"
             >
-              <PlusCircle className="w-4 h-4 text-emerald-700" /> + Post Public Job
+              <PlusCircle className="w-4 h-4 text-emerald-700" /> + Post Job
+            </button>
+
+            {/* DEDICATED POST EXTERNAL LINK JOB BUTTON */}
+            <button
+              onClick={openAddExternalJobModal}
+              className="btn bg-sky-500 hover:bg-sky-400 text-white py-2.5 px-4 text-xs font-extrabold shadow-xl flex items-center gap-1.5 border-0 keep-white"
+              title="Post External Link Job Direct Page"
+            >
+              <ExternalLink className="w-4 h-4 text-white" /> + Post External Job Link
             </button>
 
             {/* DEDICATED ADD ADMIN ONLY BUTTON */}
@@ -510,16 +577,20 @@ const AdminPanel = () => {
               <p className="text-xs text-slate-500 dark:text-slate-400">All jobs posted by Admin and Employers automatically sync across all user panels.</p>
             </div>
 
-            <button
-              onClick={() => {
-                setFormError('');
-                setFormSuccess('');
-                setShowAddJobModal(true);
-              }}
-              className="btn bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-3.5 text-xs font-bold shadow-md flex items-center gap-1.5 keep-white border-0"
-            >
-              <PlusCircle className="w-4 h-4 text-white" /> Post New Job / Internship
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={openAddStandardJobModal}
+                className="btn bg-emerald-600 hover:bg-emerald-700 text-white py-2 px-3.5 text-xs font-bold shadow-md flex items-center gap-1.5 keep-white border-0"
+              >
+                <PlusCircle className="w-4 h-4 text-white" /> + Post Platform Job
+              </button>
+              <button
+                onClick={openAddExternalJobModal}
+                className="btn bg-sky-600 hover:bg-sky-700 text-white py-2 px-3.5 text-xs font-bold shadow-md flex items-center gap-1.5 keep-white border-0"
+              >
+                <ExternalLink className="w-4 h-4 text-white" /> + Post External Job Link
+              </button>
+            </div>
           </div>
 
           <div className="space-y-3">
@@ -543,8 +614,21 @@ const AdminPanel = () => {
                           Employer: {job.company}
                         </span>
                       )}
+                      {job.externalUrl && (
+                        <span className="text-[10px] px-2 py-0.5 rounded bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/30 font-extrabold flex items-center gap-1">
+                          <ExternalLink className="w-3 h-3 text-sky-500" /> External Link
+                        </span>
+                      )}
                     </h4>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">Company: {job.company} • Deadline: {job.deadline || 'N/A'}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">
+                      Company: {job.company} • Deadline: {job.deadline || 'N/A'}
+                    </p>
+                    {job.externalUrl && (
+                      <p className="text-xs text-sky-600 dark:text-sky-400 font-medium mt-0.5 flex items-center gap-1">
+                        <ExternalLink className="w-3 h-3 shrink-0" />
+                        Direct URL: <a href={job.externalUrl} target="_blank" rel="noopener noreferrer" className="underline font-bold hover:text-sky-500 break-all">{job.externalUrl}</a>
+                      </p>
+                    )}
                     {job.requirements && <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 line-clamp-1">{job.requirements}</p>}
                   </div>
                   <button
@@ -758,8 +842,8 @@ const AdminPanel = () => {
 
       {/* POST ADMIN PUBLIC JOB / OPPORTUNITY MODAL */}
       {showAddJobModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-          <div className="card bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 w-full max-w-xl shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto">
+          <div className="card bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 w-full max-w-xl shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto my-auto">
             <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
               <div>
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -789,6 +873,51 @@ const AdminPanel = () => {
             )}
 
             <form onSubmit={handlePostAdminJob} className="space-y-4">
+              {/* Job Posting Mode Segmented Selector */}
+              <div className="flex bg-slate-100 dark:bg-slate-950 p-1.5 rounded-2xl border border-slate-200 dark:border-slate-800 gap-1">
+                <button
+                  type="button"
+                  onClick={() => setJobPostingMode('standard')}
+                  className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+                    jobPostingMode === 'standard'
+                      ? 'bg-emerald-600 text-white shadow-md keep-white'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <Briefcase className="w-3.5 h-3.5" /> Platform Job (1-Click Apply)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setJobPostingMode('external')}
+                  className={`flex-1 py-2 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+                    jobPostingMode === 'external'
+                      ? 'bg-sky-600 text-white shadow-md keep-white'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  <ExternalLink className="w-3.5 h-3.5" /> External Link Job (Direct Page)
+                </button>
+              </div>
+
+              {jobPostingMode === 'external' && (
+                <div className="p-3 bg-sky-500/10 border border-sky-500/30 rounded-2xl space-y-2">
+                  <label className="form-label text-xs font-bold text-sky-700 dark:text-sky-300 flex items-center gap-1.5">
+                    <ExternalLink className="w-4 h-4 text-sky-500" /> External Job Link (URL) *
+                  </label>
+                  <input
+                    type="url"
+                    value={adminJob.externalUrl}
+                    onChange={(e) => setAdminJob({ ...adminJob, externalUrl: e.target.value })}
+                    placeholder="https://careers.google.com/jobs/results/123456789/"
+                    className="input-field w-full text-xs py-2.5 bg-white dark:bg-slate-950 text-slate-900 dark:text-white border-sky-300 dark:border-sky-800 font-semibold focus:ring-2 focus:ring-sky-500"
+                    required={jobPostingMode === 'external'}
+                  />
+                  <p className="text-[11px] text-sky-600 dark:text-sky-400 font-medium">
+                    Applicants on the user panel will be taken directly to this external page URL when they click Apply.
+                  </p>
+                </div>
+              )}
+
               <div>
                 <label className="form-label text-xs font-bold text-slate-700 dark:text-slate-300">Opportunity Title *</label>
                 <input
@@ -803,14 +932,16 @@ const AdminPanel = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="form-label text-xs font-bold text-slate-700 dark:text-slate-300">Company / Organization *</label>
+                  <label className="form-label text-xs font-bold text-slate-700 dark:text-slate-300">
+                    Company / Organization {jobPostingMode === 'external' ? '(Optional)' : '*'}
+                  </label>
                   <input
                     type="text"
                     value={adminJob.company}
                     onChange={(e) => setAdminJob({ ...adminJob, company: e.target.value })}
-                    placeholder="System Admin or Organization Name"
+                    placeholder={jobPostingMode === 'external' ? 'e.g. Google Careers' : 'System Admin or Organization Name'}
                     className="input-field w-full text-xs py-2.5 bg-white dark:bg-slate-950/80 text-slate-900 dark:text-white border-slate-300 dark:border-slate-800"
-                    required
+                    required={jobPostingMode !== 'external'}
                   />
                 </div>
 
@@ -861,37 +992,43 @@ const AdminPanel = () => {
                 </div>
 
                 <div>
-                  <label className="form-label text-xs font-bold text-slate-700 dark:text-slate-300">Salary / Stipend *</label>
+                  <label className="form-label text-xs font-bold text-slate-700 dark:text-slate-300">
+                    Salary / Stipend {jobPostingMode === 'external' ? '(Optional)' : '*'}
+                  </label>
                   <input
                     type="text"
                     value={adminJob.salary}
                     onChange={(e) => setAdminJob({ ...adminJob, salary: e.target.value })}
                     placeholder="e.g. $60,000/yr or PKR 30,000/mo"
                     className="input-field w-full text-xs py-2.5 bg-white dark:bg-slate-950/80 text-slate-900 dark:text-white border-slate-300 dark:border-slate-800"
-                    required
+                    required={jobPostingMode !== 'external'}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="form-label text-xs font-bold text-slate-700 dark:text-slate-300">Application Deadline *</label>
+                <label className="form-label text-xs font-bold text-slate-700 dark:text-slate-300">
+                  Application Deadline {jobPostingMode === 'external' ? '(Optional)' : '*'}
+                </label>
                 <input
                   type="date"
                   value={adminJob.deadline}
                   onChange={(e) => setAdminJob({ ...adminJob, deadline: e.target.value })}
                   className="input-field w-full text-xs py-2.5 bg-white dark:bg-slate-950/80 text-slate-900 dark:text-white border-slate-300 dark:border-slate-800"
-                  required
+                  required={jobPostingMode !== 'external'}
                 />
               </div>
 
               <div>
-                <label className="form-label text-xs font-bold text-slate-700 dark:text-slate-300">Requirements & Detailed Description *</label>
+                <label className="form-label text-xs font-bold text-slate-700 dark:text-slate-300">
+                  Requirements & Detailed Description {jobPostingMode === 'external' ? '(Optional)' : '*'}
+                </label>
                 <textarea
                   value={adminJob.requirements}
                   onChange={(e) => setAdminJob({ ...adminJob, requirements: e.target.value })}
-                  placeholder="Key responsibilities, candidate qualifications, required tech stack..."
+                  placeholder={jobPostingMode === 'external' ? 'Brief note or leave empty for external direct link apply...' : 'Key responsibilities, candidate qualifications, required tech stack...'}
                   className="form-textarea text-xs bg-white dark:bg-slate-950/80 border-slate-300 dark:border-slate-800 text-slate-900 dark:text-white min-h-[90px]"
-                  required
+                  required={jobPostingMode !== 'external'}
                 />
               </div>
 
@@ -905,9 +1042,17 @@ const AdminPanel = () => {
                 </button>
                 <button
                   type="submit"
-                  className="btn bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 px-5 text-xs font-bold shadow-lg shadow-emerald-500/25 keep-white border-0"
+                  className={`btn py-2.5 px-5 text-xs font-bold shadow-lg keep-white border-0 ${
+                    jobPostingMode === 'external'
+                      ? 'bg-sky-600 hover:bg-sky-700 text-white shadow-sky-500/25'
+                      : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-500/25'
+                  }`}
                 >
-                  Publish Public Opportunity to All Panels
+                  {jobPostingMode === 'external' ? (
+                    <><ExternalLink className="w-4 h-4 inline-block mr-1.5" />Publish External Link Job</>
+                  ) : (
+                    'Publish Public Opportunity to All Panels'
+                  )}
                 </button>
               </div>
             </form>
@@ -917,8 +1062,8 @@ const AdminPanel = () => {
 
       {/* ADD NEW ADMIN MODAL */}
       {showAddUserModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
-          <div className="card bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 w-full max-w-md shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto">
+          <div className="card bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 w-full max-w-md shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto my-auto">
             <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
               <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <ShieldCheck className="w-5 h-5 text-emerald-500" /> {modalTitle}

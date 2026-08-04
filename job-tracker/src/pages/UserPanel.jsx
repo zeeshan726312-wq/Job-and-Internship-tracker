@@ -1,6 +1,6 @@
 import { useContext } from 'react';
 import { AppContext } from '../context/AppContext';
-import { Send, Clock, CheckCircle, XCircle, Calendar, FileText, GraduationCap, Video } from 'lucide-react';
+import { Send, Clock, CheckCircle, XCircle, Calendar, FileText, GraduationCap, Video, ExternalLink } from 'lucide-react';
 
 const StatusIcon = ({ status }) => {
   switch (status) {
@@ -41,9 +41,14 @@ const UserPanel = () => {
 
   const applicantName = currentUser?.name || currentUser?.username || 'user';
 
-  const handleApply = (jobId) => {
-    applyForJob(jobId, applicantName);
-    alert('Application submitted successfully!');
+  const handleApply = (job) => {
+    if (job.isExternal && job.externalUrl) {
+      window.open(job.externalUrl, '_blank', 'noopener,noreferrer');
+      applyForJob(job.id, applicantName);
+    } else {
+      applyForJob(job.id, applicantName);
+      alert('Application submitted successfully!');
+    }
   };
 
   const myApplications = (applications || []).filter(isUserApp);
@@ -63,20 +68,35 @@ const UserPanel = () => {
                 <div key={job.id} className="list-item flex-col items-start gap-3">
                   <div className="item-info w-full flex justify-between items-start">
                     <div>
-                      <h4 className="font-semibold text-lg flex items-center gap-2">
+                      <h4 className="font-semibold text-lg flex flex-wrap items-center gap-2">
                         {job.title}
                         <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded font-medium">{job.type}</span>
+                        {job.isExternal && (
+                          <span className="text-[10px] bg-sky-500/20 text-sky-600 dark:text-sky-400 px-2 py-0.5 rounded font-bold border border-sky-500/30 flex items-center gap-1">
+                            <ExternalLink className="w-3 h-3" /> External Link
+                          </span>
+                        )}
                       </h4>
                       <p className="text-secondaryText text-sm font-medium">{job.company}</p>
                     </div>
-                    <button 
-                      className="btn primary py-1.5 px-4 text-sm" 
-                      onClick={() => handleApply(job.id)}
-                      disabled={myApplications.some(app => app.jobId === job.id)}
-                    >
-                      <Send className="w-4 h-4" /> 
-                      {myApplications.some(app => app.jobId === job.id) ? 'Applied' : 'Apply'}
-                    </button>
+                    {job.isExternal ? (
+                      <button 
+                        className="btn py-1.5 px-4 text-sm flex items-center gap-1.5 bg-sky-600 hover:bg-sky-700 text-white border-0 keep-white" 
+                        onClick={() => handleApply(job)}
+                      >
+                        <ExternalLink className="w-4 h-4" /> 
+                        {myApplications.some(app => app.jobId === job.id) ? 'Visit Again ↗' : 'Apply on Site ↗'}
+                      </button>
+                    ) : (
+                      <button 
+                        className="btn primary py-1.5 px-4 text-sm" 
+                        onClick={() => handleApply(job)}
+                        disabled={myApplications.some(app => app.jobId === job.id)}
+                      >
+                        <Send className="w-4 h-4" /> 
+                        {myApplications.some(app => app.jobId === job.id) ? 'Applied' : 'Apply'}
+                      </button>
+                    )}
                   </div>
                   
                   <div className="w-full bg-black/20 rounded-lg p-3 border border-borderC space-y-2">

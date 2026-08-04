@@ -8,6 +8,7 @@ export const AppContext = createContext();
 const initialJobs = [
   { id: 1, title: 'Frontend Developer', company: 'TechCorp', type: 'Job', status: 'Open', deadline: '2026-12-31', requirements: 'React, Tailwind, 2 years experience.' },
   { id: 2, title: 'React Intern', company: 'StartupInc', type: 'Internship', status: 'Open', deadline: '2026-08-15', requirements: 'Basic HTML/CSS, willing to learn.' },
+  { id: 3, title: 'Senior Cloud Engineer (Google)', company: 'Google Careers', type: 'Job', status: 'Open', deadline: '2026-12-31', requirements: 'Apply directly on Google Careers portal for cloud position.', externalUrl: 'https://careers.google.com', isExternal: true, postedBy: 'Admin' },
 ];
 
 const initialApplications = [
