@@ -683,7 +683,7 @@ html.light .btn.secondary:hover {
   background-color: #e2e8f0 !important;
 }
 
-/* High-Contrast Status Badges & Column Colors in Light Mode */
+/* High-Contrast Status Badges, External Badges & Column Colors in Light Mode */
 html.light .text-amber-400 {
   color: #d97706 !important;
 }
@@ -702,6 +702,14 @@ html.light .text-emerald-400 {
 
 html.light .text-rose-400 {
   color: #e11d48 !important;
+}
+
+html.light .text-sky-400 {
+  color: #0284c7 !important; /* Rich Sky Blue for Light Mode */
+}
+
+html.light .text-sky-300 {
+  color: #0369a1 !important;
 }
 
 html.light .bg-emerald-500\/10 {
@@ -727,6 +735,79 @@ html.light .bg-purple-500\/10 {
 html.light .bg-rose-500\/10 {
   background-color: #ffe4e6 !important;
   border-color: #fecdd3 !important;
+}
+
+html.light .bg-sky-500\/10,
+html.light .bg-sky-500\/20 {
+  background-color: #e0f2fe !important;
+  border-color: #bae6fd !important;
+}
+
+/* Modals & Dialog overlays in Light Mode */
+html.light .fixed.inset-0 .card,
+html.light .fixed.inset-0 .bg-slate-900,
+html.light .fixed.inset-0 .bg-white {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
+  color: #0f172a !important;
+}
+
+html.light .fixed.inset-0 {
+  background-color: rgba(15, 23, 42, 0.5) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+/* Glassmorphism & Micro-animations */
+.glass-card {
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(99, 102, 241, 0.3);
+  box-shadow: 0 12px 36px 0 rgba(99, 102, 241, 0.15);
+}
+
+html.light .glass-card {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.05) !important;
+}
+
+html.light .glass-card:hover {
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 8px 25px 0 rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Smooth Interactive Elements & Buttons */
+.btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(rgba(255, 255, 255, 0.1), transparent);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.btn:hover::after {
+  opacity: 1;
+}
+
+.btn:active {
+  transform: scale(0.98);
 }
 
 /* --- COMPREHENSIVE RESPONSIVE BREAKPOINTS (Mobile, Tablet, Desktop) --- */
@@ -775,6 +856,109 @@ html.light .bg-rose-500\/10 {
     padding: 8px 12px !important;
     font-size: 12px !important;
   }
+}
+
+/* --- COLORFUL ANIMATION SYSTEM --- */
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 15px rgba(99, 102, 241, 0.4), inset 0 0 10px rgba(99, 102, 241, 0.2); }
+  50% { box-shadow: 0 0 30px rgba(168, 85, 247, 0.7), inset 0 0 15px rgba(168, 85, 247, 0.4); }
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes floatSlow {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}
+
+/* Animated Text Gradients */
+.animate-gradient-text {
+  background: linear-gradient(135deg, #6366f1, #a855f7, #ec4899, #06b6d4, #10b981);
+  background-size: 300% 300%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradientShift 6s ease infinite;
+}
+
+html.light .animate-gradient-text {
+  background: linear-gradient(135deg, #4f46e5, #9333ea, #db2777, #0891b2, #059669);
+  background-size: 300% 300%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradientShift 6s ease infinite;
+}
+
+/* Colorful Animated Banners & Headers */
+.colorful-banner {
+  background: linear-gradient(-45deg, #4f46e5, #7c3aed, #0d9488, #2563eb);
+  background-size: 400% 400%;
+  animation: gradientShift 10s ease infinite;
+  box-shadow: 0 10px 40px -10px rgba(79, 70, 229, 0.5);
+}
+
+/* Glowing Colorful Cards */
+.hover-glow-card {
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.hover-glow-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(99, 102, 241, 0.4);
+  box-shadow: 0 15px 35px -5px rgba(99, 102, 241, 0.25), 0 0 20px 0 rgba(168, 85, 247, 0.15);
+}
+
+html.light .hover-glow-card:hover {
+  box-shadow: 0 12px 30px -5px rgba(79, 70, 229, 0.15), 0 0 15px 0 rgba(168, 85, 247, 0.1) !important;
+}
+
+/* Shimmer Light Reflection Effect on Badges & Highlight Elements */
+.shimmer-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.shimmer-effect::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.25),
+    transparent
+  );
+  animation: shimmer 3s infinite;
+}
+
+/* Floating Badges & Icons */
+.float-icon {
+  animation: floatSlow 4s ease-in-out infinite;
+}
+
+.pulse-glow {
+  animation: pulseGlow 3s ease-in-out infinite;
+}
+
+/* Live Animated Gradient Pill Badge */
+.animated-badge {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(168, 85, 247, 0.2), rgba(6, 182, 212, 0.2));
+  background-size: 200% 200%;
+  animation: gradientShift 4s ease infinite;
+  border: 1px solid rgba(99, 102, 241, 0.3);
 }
 
 

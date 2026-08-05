@@ -262,11 +262,11 @@ const AdminPanel = () => {
     <div className="panel-container space-y-8 font-sans">
       {/* Header Banner */}
       <div 
-        className="relative rounded-2xl p-8 overflow-hidden bg-gradient-to-r from-emerald-600 via-emerald-700 to-teal-900 text-white shadow-2xl border border-emerald-500/40"
+        className="relative rounded-2xl p-8 overflow-hidden colorful-banner text-white shadow-2xl border border-emerald-500/40"
       >
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/15 text-white border border-white/20 rounded-full text-xs font-semibold mb-2 backdrop-blur-md">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/15 text-white border border-white/20 rounded-full text-xs font-semibold mb-2 backdrop-blur-md float-icon">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-200" /> System Manager Console
             </div>
             <h2 className="text-2xl md:text-3xl font-extrabold text-white keep-white tracking-tight">
@@ -281,7 +281,7 @@ const AdminPanel = () => {
             {/* DEDICATED POST STANDARD JOB BUTTON */}
             <button
               onClick={openAddStandardJobModal}
-              className="btn bg-white text-emerald-900 hover:bg-slate-100 py-2.5 px-4 text-xs font-extrabold shadow-xl flex items-center gap-1.5 border-0"
+              className="btn bg-white text-emerald-900 hover:bg-slate-100 py-2.5 px-4 text-xs font-extrabold shadow-xl flex items-center gap-1.5 border-0 transition-transform hover:scale-105"
               title="Post New Standard Opportunity for All Users"
             >
               <PlusCircle className="w-4 h-4 text-emerald-700" /> + Post Job
@@ -290,7 +290,7 @@ const AdminPanel = () => {
             {/* DEDICATED POST EXTERNAL LINK JOB BUTTON */}
             <button
               onClick={openAddExternalJobModal}
-              className="btn bg-sky-500 hover:bg-sky-400 text-white py-2.5 px-4 text-xs font-extrabold shadow-xl flex items-center gap-1.5 border-0 keep-white"
+              className="btn bg-sky-500 hover:bg-sky-400 text-white py-2.5 px-4 text-xs font-extrabold shadow-xl flex items-center gap-1.5 border-0 keep-white shimmer-effect transition-transform hover:scale-105"
               title="Post External Link Job Direct Page"
             >
               <ExternalLink className="w-4 h-4 text-white" /> + Post External Job Link

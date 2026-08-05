@@ -98,16 +98,16 @@ const DashboardOverview = () => {
   return (
     <div className="panel-container space-y-8 font-sans">
       {/* Welcome Banner */}
-      <div className="relative rounded-2xl p-8 overflow-hidden bg-gradient-to-r from-emerald-600 via-emerald-700 to-teal-900 text-white shadow-2xl border border-emerald-500/40">
+      <div className="relative rounded-2xl p-8 overflow-hidden colorful-banner text-white shadow-2xl border border-indigo-500/40">
         <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl pointer-events-none" />
         
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/15 text-white border border-white/20 rounded-full text-xs font-semibold backdrop-blur-md">
-              <Sparkles className="w-3.5 h-3.5 text-emerald-200" /> Student Applicant Workspace
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/15 text-white border border-white/20 rounded-full text-xs font-semibold backdrop-blur-md float-icon">
+              <Sparkles className="w-3.5 h-3.5 text-amber-300" /> Student Applicant Workspace
             </div>
             <h2 className="text-2xl md:text-3xl font-extrabold text-white keep-white tracking-tight">
-              Hi, {currentUser?.name || 'User'}
+              Hi, {currentUser?.name || 'User'} 👋
             </h2>
             <p className="text-emerald-100 text-sm max-w-xl leading-relaxed font-medium">
               View official platform opportunities posted by Admin, click any listing for full details, apply with 1-click, and monitor your live application status.
@@ -220,7 +220,7 @@ const DashboardOverview = () => {
                   return (
                     <div 
                       key={job.id} 
-                      className="p-4 bg-slate-50 dark:bg-slate-950/80 hover:bg-slate-100 dark:hover:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl transition-all space-y-3"
+                      className="p-5 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 hover-glow-card space-y-3 transition-all duration-200"
                     >
                       <div className="flex justify-between items-start gap-3">
                         <div className="cursor-pointer" onClick={() => setSelectedJobDetail(job)}>
