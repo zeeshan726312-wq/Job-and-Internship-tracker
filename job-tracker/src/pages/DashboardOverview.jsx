@@ -97,9 +97,14 @@ const DashboardOverview = () => {
 
   return (
     <div className="panel-container space-y-8 font-sans">
-      {/* Welcome Banner */}
-      <div className="relative rounded-2xl p-8 overflow-hidden colorful-banner text-white shadow-2xl border border-indigo-500/40">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl pointer-events-none" />
+      {/* Welcome Banner with Enhanced Picture GUI */}
+      <div className="relative rounded-2xl p-8 overflow-hidden text-white shadow-2xl border border-indigo-500/40 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900">
+        {/* Banner background picture overlay */}
+        <div 
+          className="absolute inset-0 opacity-25 mix-blend-overlay bg-cover bg-center pointer-events-none" 
+          style={{ backgroundImage: `url('/platform_jobs_banner.jpg')` }}
+        />
+        <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
         
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
           <div className="space-y-2">
@@ -117,9 +122,9 @@ const DashboardOverview = () => {
           <div className="flex flex-wrap items-center gap-3">
             <Link
               to="/applications"
-              className="btn bg-white text-emerald-800 hover:bg-slate-100 py-3 px-5 font-extrabold text-sm shadow-xl hover:scale-[1.02] transition-all flex items-center gap-2 border-0"
+              className="btn bg-white text-indigo-900 hover:bg-slate-100 py-3 px-5 font-extrabold text-sm shadow-xl hover:scale-[1.02] transition-all flex items-center gap-2 border-0 rounded-xl"
             >
-              <FileText className="w-4 h-4 text-emerald-800" /> View Application Pipeline ({totalAppsCount})
+              <FileText className="w-4 h-4 text-indigo-900" /> View Application Pipeline ({totalAppsCount})
             </Link>
           </div>
         </div>
@@ -243,10 +248,10 @@ const DashboardOverview = () => {
                           <p className="text-slate-500 dark:text-slate-400 text-xs font-medium mt-0.5">Company: {job.company}</p>
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 shrink-0">
                           <button
                             onClick={() => setSelectedJobDetail(job)}
-                            className="btn secondary py-1.5 px-2.5 text-xs font-bold"
+                            className="h-10 w-36 shrink-0 text-xs font-bold rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700/80 transition-all duration-200 flex items-center justify-center gap-1.5 shadow-sm"
                             title="View Full Details"
                           >
                             Details
@@ -254,7 +259,7 @@ const DashboardOverview = () => {
                           {job.isExternal ? (
                             <button
                               onClick={() => handleDirectApply(job)}
-                              className="btn py-1.5 px-3.5 text-xs font-bold transition-all bg-sky-600 hover:bg-sky-700 text-white shadow-md border-0 keep-white flex items-center gap-1.5"
+                              className="h-10 w-36 shrink-0 text-xs font-bold rounded-xl bg-sky-600 hover:bg-sky-500 text-white shadow-md shadow-sky-600/20 border-0 transition-all duration-200 flex items-center justify-center gap-1.5 keep-white"
                             >
                               <ExternalLink className="w-3.5 h-3.5" />
                               {hasApplied ? 'Visit Again ↗' : 'Apply on Site ↗'}
@@ -262,8 +267,10 @@ const DashboardOverview = () => {
                           ) : (
                             <button
                               onClick={() => handleDirectApply(job)}
-                              className={`btn py-1.5 px-3.5 text-xs font-bold transition-all ${
-                                hasApplied ? 'secondary opacity-70 cursor-default' : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md border-0 keep-white'
+                              className={`h-10 w-36 shrink-0 text-xs font-bold rounded-xl transition-all duration-200 flex items-center justify-center gap-1.5 ${
+                                hasApplied 
+                                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 opacity-90 cursor-default' 
+                                  : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/20 border-0 keep-white'
                               }`}
                               disabled={hasApplied}
                             >
@@ -378,39 +385,46 @@ const DashboardOverview = () => {
               const requestStatus = myRequest?.status; // 'Pending' | 'Approved' | 'Rejected'
 
               return (
-                <div key={m.id} className="p-4 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-xl space-y-3 flex flex-col justify-between">
+                <div key={m.id} className="p-4 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-3 flex flex-col justify-between hover:border-emerald-500/30 transition-all">
                   <div>
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-2">
                       <h4 className="font-bold text-sm text-slate-900 dark:text-white">{m.jobTitle} Mentorship</h4>
-                      <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded border border-emerald-500/30">
+                      <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-lg border border-emerald-500/30 shrink-0">
                         {m.mentorshipFee}
                       </span>
                     </div>
-                    <p className="text-xs text-slate-600 dark:text-slate-300 font-medium mt-1">Mentor: <span className="font-bold text-slate-900 dark:text-white">{m.mentorName}</span> ({m.company})</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 italic">"{m.description}"</p>
+                    <div className="flex items-center gap-2.5 mt-2">
+                      <img 
+                        src="/career_mentor_avatar.jpg" 
+                        alt="Mentor" 
+                        className="w-7 h-7 rounded-full object-cover border border-emerald-500/40 shadow-sm"
+                      />
+                      <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">Mentor: <span className="font-bold text-slate-900 dark:text-white">{m.mentorName}</span> ({m.company})</p>
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 italic line-clamp-2">"{m.description}"</p>
                   </div>
 
-                  <div className="pt-2 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2">
+                  <div className="pt-2.5 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2">
                     {/* Application status badge */}
                     {hasApplied ? (
-                      <span className={`text-[10px] px-2.5 py-1 rounded-full font-extrabold uppercase border ${
+                      <span className={`h-9 w-44 shrink-0 text-[11px] font-extrabold uppercase rounded-xl border flex items-center justify-center gap-1 ${
                         requestStatus === 'Approved'
                           ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
                           : requestStatus === 'Rejected'
                           ? 'bg-rose-500/10 text-rose-500 dark:text-rose-400 border-rose-500/30'
                           : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30'
                       }`}>
-                        {requestStatus === 'Approved' ? '✓ Accepted by Mentor' : requestStatus === 'Rejected' ? '✕ Rejected by Mentor' : '⏳ Awaiting Mentor Review'}
+                        {requestStatus === 'Approved' ? '✓ Accepted by Mentor' : requestStatus === 'Rejected' ? '✕ Rejected by Mentor' : '⏳ Awaiting Review'}
                       </span>
                     ) : (
-                      <span className="text-[11px] text-slate-500 dark:text-slate-400">Open — Not Applied</span>
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Open — Available Now</span>
                     )}
 
                     {/* Apply button — only if not yet applied */}
                     {!hasApplied && (
                       <button
                         onClick={() => requestMentorshipProgram(m.id, m.mentorName, m.jobTitle, m.mentorshipFee)}
-                        className="btn py-1.5 px-3.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-md keep-white border-0"
+                        className="h-9 w-44 shrink-0 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/20 border-0 transition-all duration-200 flex items-center justify-center gap-1.5 keep-white"
                       >
                         Apply for Mentorship
                       </button>

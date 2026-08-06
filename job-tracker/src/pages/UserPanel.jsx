@@ -81,20 +81,24 @@ const UserPanel = () => {
                     </div>
                     {job.isExternal ? (
                       <button 
-                        className="btn py-1.5 px-4 text-sm flex items-center gap-1.5 bg-sky-600 hover:bg-sky-700 text-white border-0 keep-white" 
+                        className="h-10 w-36 shrink-0 text-xs font-bold rounded-xl bg-sky-600 hover:bg-sky-500 text-white shadow-md shadow-sky-600/20 border-0 transition-all duration-200 flex items-center justify-center gap-1.5 keep-white" 
                         onClick={() => handleApply(job)}
                       >
-                        <ExternalLink className="w-4 h-4" /> 
+                        <ExternalLink className="w-3.5 h-3.5" /> 
                         {myApplications.some(app => app.jobId === job.id) ? 'Visit Again ↗' : 'Apply on Site ↗'}
                       </button>
                     ) : (
                       <button 
-                        className="btn primary py-1.5 px-4 text-sm" 
+                        className={`h-10 w-36 shrink-0 text-xs font-bold rounded-xl transition-all duration-200 flex items-center justify-center gap-1.5 ${
+                          myApplications.some(app => app.jobId === job.id)
+                            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 opacity-90 cursor-default'
+                            : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/20 border-0 keep-white'
+                        }`} 
                         onClick={() => handleApply(job)}
                         disabled={myApplications.some(app => app.jobId === job.id)}
                       >
-                        <Send className="w-4 h-4" /> 
-                        {myApplications.some(app => app.jobId === job.id) ? 'Applied' : 'Apply'}
+                        <Send className="w-3.5 h-3.5" /> 
+                        {myApplications.some(app => app.jobId === job.id) ? 'Applied' : 'Apply Now'}
                       </button>
                     )}
                   </div>
@@ -125,15 +129,22 @@ const UserPanel = () => {
                 const isRequested = myMentorships.some(m => m.courseId === course.id);
                 return (
                   <div key={course.id} className="list-item flex-col items-start">
-                    <div className="w-full flex justify-between items-center">
-                      <div>
-                        <h4 className="font-semibold flex items-center gap-2">
-                          <GraduationCap className="w-5 h-5 text-secondary" /> {course.title}
-                        </h4>
-                        <p className="text-sm text-secondaryText">Mentor: {course.mentorName}</p>
+                    <div className="w-full flex justify-between items-center gap-3">
+                      <div className="flex items-center gap-2.5">
+                        <img src="/career_mentor_avatar.jpg" alt="Mentor" className="w-8 h-8 rounded-full object-cover border border-emerald-500/40" />
+                        <div>
+                          <h4 className="font-semibold flex items-center gap-2">
+                            <GraduationCap className="w-5 h-5 text-secondary" /> {course.title}
+                          </h4>
+                          <p className="text-sm text-secondaryText">Mentor: {course.mentorName}</p>
+                        </div>
                       </div>
                       <button 
-                        className="btn secondary py-1.5 px-3 text-sm"
+                        className={`h-9 w-44 shrink-0 text-xs font-bold rounded-xl transition-all duration-200 flex items-center justify-center gap-1.5 ${
+                          isRequested 
+                            ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 cursor-default'
+                            : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/20 border-0 keep-white'
+                        }`}
                         onClick={() => requestMentorship(course.id, course.mentorName, applicantName)}
                         disabled={isRequested}
                       >
