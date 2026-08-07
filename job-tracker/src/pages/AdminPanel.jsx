@@ -262,12 +262,12 @@ const AdminPanel = () => {
     <div className="panel-container space-y-8 font-sans">
       {/* Header Banner */}
       <div 
-        className="relative rounded-2xl p-8 overflow-hidden colorful-banner text-white shadow-2xl border border-emerald-500/40"
+        className="relative rounded-2xl p-8 overflow-hidden text-white shadow-2xl darkblue-animated-header"
       >
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/15 text-white border border-white/20 rounded-full text-xs font-semibold mb-2 backdrop-blur-md float-icon">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-200" /> System Manager Console
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 text-white border border-white/20 rounded-full text-xs font-semibold mb-2 backdrop-blur-md float-icon">
+              <ShieldCheck className="w-3.5 h-3.5 text-indigo-300" /> System Manager Console
             </div>
             <h2 className="text-2xl md:text-3xl font-extrabold text-white keep-white tracking-tight">
               Administrator Control Panel
@@ -299,10 +299,10 @@ const AdminPanel = () => {
             {/* DEDICATED ADD ADMIN ONLY BUTTON */}
             <button
               onClick={openAddAdminModal}
-              className="btn bg-emerald-950/50 hover:bg-emerald-950/70 text-white border border-white/30 py-2.5 px-4 text-xs font-bold flex items-center gap-2 backdrop-blur-md"
+              className="btn bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-950/50 dark:hover:bg-emerald-950/70 text-white keep-white border border-emerald-600 dark:border-white/30 py-2.5 px-4 text-xs font-bold flex items-center gap-2 backdrop-blur-md cursor-pointer shadow-md"
               title="Add New Administrator Account"
             >
-              <ShieldCheck className="w-4 h-4 text-emerald-300" /> + Add Admin
+              <ShieldCheck className="w-4 h-4 text-emerald-200 dark:text-emerald-300" /> + Add Admin
             </button>
           </div>
         </div>

@@ -9,7 +9,9 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     return <Navigate to="/auth" replace />;
   }
 
-  if (allowedRoles && !allowedRoles.includes(currentUser.role)) {
+  const role = (currentUser?.role || 'user').toLowerCase();
+
+  if (allowedRoles && !allowedRoles.map(r => r.toLowerCase()).includes(role)) {
     // Redirect to their default dashboard if they try to access an unauthorized panel
     const defaultRoutes = {
       user: '/',
@@ -17,7 +19,7 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
       mentor: '/mentor',
       admin: '/admin'
     };
-    return <Navigate to={defaultRoutes[currentUser.role] || '/'} replace />;
+    return <Navigate to={defaultRoutes[role] || '/'} replace />;
   }
 
   return children;

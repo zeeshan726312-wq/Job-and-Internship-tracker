@@ -84,12 +84,12 @@ const EmployerPanel = () => {
     <div className="panel-container space-y-8 font-sans">
       {/* Header Banner */}
       <div 
-        className="relative rounded-2xl p-8 overflow-hidden bg-gradient-to-r from-emerald-600 via-emerald-700 to-teal-900 text-white shadow-2xl border border-emerald-500/40"
+        className="relative rounded-2xl p-8 overflow-hidden text-white shadow-2xl darkblue-animated-header"
       >
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/15 text-white border border-white/20 rounded-full text-xs font-semibold mb-2 backdrop-blur-md">
-              <Building2 className="w-3.5 h-3.5 text-emerald-200" /> Employer & Recruiter Console
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 text-white border border-white/20 rounded-full text-xs font-semibold mb-2 backdrop-blur-md float-icon">
+              <Building2 className="w-3.5 h-3.5 text-indigo-300" /> Employer & Recruiter Console
             </div>
             <h2 className="text-2xl md:text-3xl font-extrabold text-white keep-white tracking-tight">
               Recruiter Command Hub ({employerCompany})

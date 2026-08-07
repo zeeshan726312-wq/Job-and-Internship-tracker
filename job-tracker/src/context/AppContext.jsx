@@ -557,11 +557,15 @@ export const AppProvider = ({ children }) => {
 
   const markMessageRead = (msgId) => {
     const email = currentUser?.email;
-    const updated = messagesRef.current.map(m =>
-      String(m.id) === String(msgId) && !m.readBy.includes(email)
-        ? { ...m, readBy: [...m.readBy, email] }
-        : m
-    );
+    if (!email) return;
+    const updated = messagesRef.current.map(m => {
+      if (!m || String(m.id) !== String(msgId)) return m;
+      const readBy = Array.isArray(m.readBy) ? m.readBy : [];
+      if (!readBy.includes(email)) {
+        return { ...m, readBy: [...readBy, email] };
+      }
+      return m;
+    });
     updateCollection('jt_messages', updated, setMessages, messagesRef);
   };
 

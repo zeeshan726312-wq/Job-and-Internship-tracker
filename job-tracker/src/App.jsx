@@ -6,6 +6,7 @@ import ApplicationsList from './pages/ApplicationsList';
 import EmployerPanel from './pages/EmployerPanel';
 import MentorPanel from './pages/MentorPanel';
 import AdminPanel from './pages/AdminPanel';
+import UserPanel from './pages/UserPanel';
 import AuthPage from './pages/AuthPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -27,6 +28,18 @@ function App() {
               </ProtectedRoute>
             } />
             <Route path="dashboard" element={
+              <ProtectedRoute allowedRoles={['user', 'employer', 'mentor', 'admin']}>
+                <DashboardOverview />
+              </ProtectedRoute>
+            } />
+
+            {/* Direct Applicant Panel Routes */}
+            <Route path="applicant" element={
+              <ProtectedRoute allowedRoles={['user', 'employer', 'mentor', 'admin']}>
+                <DashboardOverview />
+              </ProtectedRoute>
+            } />
+            <Route path="user" element={
               <ProtectedRoute allowedRoles={['user', 'employer', 'mentor', 'admin']}>
                 <DashboardOverview />
               </ProtectedRoute>

@@ -217,44 +217,49 @@ const ApplicationsList = () => {
 
   return (
     <div className="panel-container space-y-6 font-sans">
-      {/* Header Bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-2.5">
-            <FileText className="w-6 h-6 text-emerald-500" /> Application Pipeline & Tracker
-          </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            View status updates assigned by employers and track active job & internship submissions.
-          </p>
-        </div>
+      {/* Header Banner */}
+      <div className="relative rounded-2xl p-8 overflow-hidden text-white shadow-2xl darkblue-animated-header">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
+          <div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 text-white border border-white/20 rounded-full text-xs font-semibold mb-2 backdrop-blur-md float-icon">
+              <FileText className="w-3.5 h-3.5 text-indigo-300" /> Live Application Pipeline
+            </div>
+            <h2 className="text-2xl md:text-3xl font-extrabold text-white keep-white tracking-tight">
+              Application Tracker & Status Board
+            </h2>
+            <p className="text-slate-200 text-xs mt-1 font-medium">
+              View status updates assigned by employers, manage active job & internship submissions, and track interview schedules.
+            </p>
+          </div>
 
-        <div className="flex items-center gap-3">
-          {/* View Toggle */}
-          <div className="flex bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 p-1 rounded-xl">
-            <button
-              onClick={() => setViewMode('kanban')}
-              className={`p-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors ${
-                viewMode === 'kanban' ? 'bg-emerald-600 text-white shadow-md keep-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-              title="Kanban Board View"
-            >
-              <LayoutGrid className="w-4 h-4" /> Board
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              className={`p-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors ${
-                viewMode === 'list' ? 'bg-emerald-600 text-white shadow-md keep-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-              }`}
-              title="Detailed List View"
-            >
-              <List className="w-4 h-4" /> List
-            </button>
+          <div className="flex items-center gap-3">
+            {/* View Toggle */}
+            <div className="flex bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 p-1 rounded-xl">
+              <button
+                onClick={() => setViewMode('kanban')}
+                className={`p-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors ${
+                  viewMode === 'kanban' ? 'bg-indigo-600 text-white shadow-md keep-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+                title="Kanban Board View"
+              >
+                <LayoutGrid className="w-4 h-4" /> Board
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-2 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors ${
+                  viewMode === 'list' ? 'bg-indigo-600 text-white shadow-md keep-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                }`}
+                title="Detailed List View"
+              >
+                <List className="w-4 h-4" /> List
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Filter Controls Bar */}
-      <div className="card bg-slate-900/80 p-4 border border-slate-800 rounded-2xl space-y-3">
+      <div className="card bg-white dark:bg-slate-900/80 p-4 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-3 shadow-sm">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {/* Search Box */}
           <div className="relative flex items-center">
@@ -266,17 +271,17 @@ const ApplicationsList = () => {
               placeholder="Search by job title or company..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="input-field w-full !pl-10 text-xs bg-slate-950/80 border-slate-800"
+              className="input-field w-full !pl-10 text-xs bg-slate-50 dark:bg-slate-950/80 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
             />
           </div>
 
           {/* Type Filter */}
           <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-400 whitespace-nowrap font-medium">Type:</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap font-medium">Type:</span>
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
-              className="form-select text-xs py-2 bg-slate-950/80 border-slate-800 text-white"
+              className="form-select text-xs py-2 bg-white dark:bg-slate-950/80 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white font-bold"
             >
               <option value="All">All Types (Jobs & Internships)</option>
               <option value="Job">Job Positions</option>
@@ -286,17 +291,17 @@ const ApplicationsList = () => {
 
           {/* Status Filter */}
           <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-400 whitespace-nowrap font-medium">Stage:</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap font-medium">Status:</span>
             <select
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value)}
-              className="form-select text-xs py-2 bg-slate-950/80 border-slate-800 text-white"
+              className="form-select text-xs py-2 bg-white dark:bg-slate-950/80 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white font-bold"
             >
-              <option value="All">All Pipeline Stages</option>
-              <option value="Applied">Applied / Pending</option>
+              <option value="All">All Statuses</option>
+              <option value="Applied">Applied</option>
               <option value="Shortlisted">Shortlisted</option>
-              <option value="Interview">Interview Stage</option>
-              <option value="Hired">Hired / Offered</option>
+              <option value="Interview">Interview Scheduled</option>
+              <option value="Hired">Hired / Offer</option>
               <option value="Rejected">Rejected</option>
             </select>
           </div>
@@ -427,20 +432,20 @@ const ApplicationsList = () => {
             filteredApps.map(app => (
               <div 
                 key={app.id}
-                className="card bg-slate-900/60 hover:bg-slate-900/90 border border-slate-800 p-5 rounded-2xl transition-all"
+                className="card bg-white dark:bg-slate-900/60 hover:bg-slate-50 dark:hover:bg-slate-900/90 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl transition-all shadow-sm"
               >
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="text-base font-bold text-white mb-0">{app.title}</h3>
+                      <h3 className="text-base font-bold text-slate-900 dark:text-white mb-0">{app.title}</h3>
                       <span className={`text-xs px-2.5 py-0.5 rounded-full font-bold border ${
                         app.type === 'Internship' 
-                          ? 'bg-purple-500/10 text-purple-400 border-purple-500/20' 
-                          : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20'
+                          ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20' 
+                          : 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20'
                       }`}>
                         {app.type}
                       </span>
-                      <span className="text-[11px] px-2 py-0.5 rounded bg-slate-950 text-slate-400 border border-slate-800">
+                      <span className="text-[11px] px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800">
                         {app.source} Source
                       </span>
                       {app.isExternal && (

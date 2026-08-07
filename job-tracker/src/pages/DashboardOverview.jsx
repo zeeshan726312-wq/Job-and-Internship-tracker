@@ -1,5 +1,5 @@
-import { useContext, useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useContext, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { AppContext } from '../context/AppContext';
 import { 
   Briefcase, 
@@ -17,7 +17,8 @@ import {
   X,
   MessageSquare,
   Bell,
-  ExternalLink
+  ExternalLink,
+  GraduationCap
 } from 'lucide-react';
 
 const StatusIcon = ({ status }) => {
@@ -33,28 +34,28 @@ const StatusIcon = ({ status }) => {
 };
 
 const DashboardOverview = () => {
-  const { jobs = [], applications = [], personalApps = [], currentUser, applyForJob, mentorApps = [], mentorships = [], requestMentorshipProgram, messages = [], markMessageRead } = useContext(AppContext);
-  const navigate = useNavigate();
+  const context = useContext(AppContext) || {};
+  const { 
+    jobs = [], 
+    applications = [], 
+    personalApps = [], 
+    currentUser = null, 
+    applyForJob = () => {}, 
+    mentorApps = [], 
+    mentorships = [], 
+    requestMentorshipProgram = () => {}, 
+    messages = [], 
+    markMessageRead = () => {} 
+  } = context;
+
   const [applySuccessMsg, setApplySuccessMsg] = useState('');
   const [selectedJobDetail, setSelectedJobDetail] = useState(null);
 
-  // Redirect non-applicant roles to their specific dedicated panels
-  useEffect(() => {
-    if (currentUser?.role === 'admin') {
-      navigate('/admin', { replace: true });
-    } else if (currentUser?.role === 'employer') {
-      navigate('/employer', { replace: true });
-    } else if (currentUser?.role === 'mentor') {
-      navigate('/mentor', { replace: true });
-    }
-  }, [currentUser, navigate]);
-
   const handleDirectApply = (job) => {
+    if (!job) return;
     const applicantName = currentUser?.name || currentUser?.username || 'User';
     if (job.isExternal && job.externalUrl) {
-      // Open external link in new tab
       window.open(job.externalUrl, '_blank', 'noopener,noreferrer');
-      // Also track it in the pipeline
       applyForJob(job.id, applicantName);
       setApplySuccessMsg(`Opened "${job.title}" external page! Application tracked in your pipeline.`);
     } else {
@@ -69,12 +70,12 @@ const DashboardOverview = () => {
     if (!currentUser) return true;
     if (currentUser.role === 'admin' || currentUser.role === 'employer') return true;
 
-    const cName = (currentUser.name || '').toLowerCase().trim();
-    const cUsername = (currentUser.username || '').toLowerCase().trim();
-    const cEmail = (currentUser.email || '').toLowerCase().trim();
+    const cName = String(currentUser?.name || '').toLowerCase().trim();
+    const cUsername = String(currentUser?.username || '').toLowerCase().trim();
+    const cEmail = String(currentUser?.email || '').toLowerCase().trim();
     
-    const appName = (app.applicantName || '').toLowerCase().trim();
-    const appEmail = (app.applicantEmail || '').toLowerCase().trim();
+    const appName = String(app?.applicantName || '').toLowerCase().trim();
+    const appEmail = String(app?.applicantEmail || '').toLowerCase().trim();
 
     if (appEmail && cEmail && appEmail === cEmail) return true;
     if (appName && (appName === cName || appName === cUsername || (cName && appName.includes(cName)))) return true;
@@ -82,8 +83,14 @@ const DashboardOverview = () => {
     return false;
   };
 
-  const myApplications = (applications || []).filter(isUserApp);
-  const myPersonalApps = (personalApps || []).filter(isUserApp);
+  const safeJobs = Array.isArray(jobs) ? jobs : [];
+  const safeApplications = Array.isArray(applications) ? applications : [];
+  const safePersonalApps = Array.isArray(personalApps) ? personalApps : [];
+  const safeMentorApps = Array.isArray(mentorApps) ? mentorApps : [];
+  const safeMentorships = Array.isArray(mentorships) ? mentorships : [];
+
+  const myApplications = safeApplications.filter(isUserApp);
+  const myPersonalApps = safePersonalApps.filter(isUserApp);
 
   const totalAppsCount = myApplications.length + myPersonalApps.length;
   const inReviewCount = myApplications.filter(a => a.status === 'Applied' || a.status === 'Pending').length + 
@@ -97,24 +104,17 @@ const DashboardOverview = () => {
 
   return (
     <div className="panel-container space-y-8 font-sans">
-      {/* Welcome Banner with Enhanced Picture GUI */}
-      <div className="relative rounded-2xl p-8 overflow-hidden text-white shadow-2xl border border-indigo-500/40 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900">
-        {/* Banner background picture overlay */}
-        <div 
-          className="absolute inset-0 opacity-25 mix-blend-overlay bg-cover bg-center pointer-events-none" 
-          style={{ backgroundImage: `url('/platform_jobs_banner.jpg')` }}
-        />
-        <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
-        
+      {/* Dark Blue Animated Header Banner */}
+      <div className="relative rounded-2xl p-8 overflow-hidden text-white shadow-2xl darkblue-animated-header">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/15 text-white border border-white/20 rounded-full text-xs font-semibold backdrop-blur-md float-icon">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 text-white border border-white/20 rounded-full text-xs font-semibold backdrop-blur-md float-icon">
               <Sparkles className="w-3.5 h-3.5 text-amber-300" /> Student Applicant Workspace
             </div>
             <h2 className="text-2xl md:text-3xl font-extrabold text-white keep-white tracking-tight">
               Hi, {currentUser?.name || 'User'} 👋
             </h2>
-            <p className="text-emerald-100 text-sm max-w-xl leading-relaxed font-medium">
+            <p className="text-slate-200 text-sm max-w-xl leading-relaxed font-medium">
               View official platform opportunities posted by Admin, click any listing for full details, apply with 1-click, and monitor your live application status.
             </p>
           </div>
@@ -122,9 +122,9 @@ const DashboardOverview = () => {
           <div className="flex flex-wrap items-center gap-3">
             <Link
               to="/applications"
-              className="btn bg-white text-indigo-900 hover:bg-slate-100 py-3 px-5 font-extrabold text-sm shadow-xl hover:scale-[1.02] transition-all flex items-center gap-2 border-0 rounded-xl"
+              className="btn bg-emerald-600 hover:bg-emerald-500 text-white py-3 px-5 font-extrabold text-sm shadow-xl hover:scale-[1.02] transition-all flex items-center gap-2 border-0 rounded-xl keep-white"
             >
-              <FileText className="w-4 h-4 text-indigo-900" /> View Application Pipeline ({totalAppsCount})
+              <FileText className="w-4 h-4 text-white" /> View Application Pipeline ({totalAppsCount})
             </Link>
           </div>
         </div>
@@ -210,22 +210,22 @@ const DashboardOverview = () => {
           <div>
             <div className="flex items-center justify-between mb-5">
               <h3 className="flex items-center gap-2 text-slate-900 dark:text-white font-bold text-base">
-                <Briefcase className="w-5 h-5 text-indigo-500" /> Platform Opportunities ({jobs.length})
+                <Briefcase className="w-5 h-5 text-indigo-500" /> Platform Opportunities ({safeJobs.length})
               </h3>
               <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Click Card for Full Details</span>
             </div>
 
-            <div className="list max-h-[420px] overflow-y-auto pr-1 space-y-3">
-              {jobs.length === 0 ? (
+            <div className="list max-h-[520px] overflow-y-auto pr-1 space-y-3.5">
+              {safeJobs.length === 0 ? (
                 <p className="text-slate-500 dark:text-slate-400 text-sm py-6 text-center">No platform listings available.</p>
               ) : (
-                jobs.map(job => {
+                safeJobs.map(job => {
                   const hasApplied = myApplications.some(app => app.jobId === job.id);
                   const isAdminJob = job.postedBy === 'Admin' || job.company === 'System Admin';
                   return (
                     <div 
                       key={job.id} 
-                      className="p-5 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 hover-glow-card space-y-3 transition-all duration-200"
+                      className="p-4.5 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 hover-glow-card space-y-3 transition-all duration-200"
                     >
                       <div className="flex justify-between items-start gap-3">
                         <div className="cursor-pointer" onClick={() => setSelectedJobDetail(job)}>
@@ -251,7 +251,7 @@ const DashboardOverview = () => {
                         <div className="flex items-center gap-2 shrink-0">
                           <button
                             onClick={() => setSelectedJobDetail(job)}
-                            className="h-10 w-36 shrink-0 text-xs font-bold rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700/80 transition-all duration-200 flex items-center justify-center gap-1.5 shadow-sm"
+                            className="h-10 w-32 shrink-0 text-xs font-bold rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700/80 transition-all duration-200 flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
                             title="View Full Details"
                           >
                             Details
@@ -259,41 +259,44 @@ const DashboardOverview = () => {
                           {job.isExternal ? (
                             <button
                               onClick={() => handleDirectApply(job)}
-                              className="h-10 w-36 shrink-0 text-xs font-bold rounded-xl bg-sky-600 hover:bg-sky-500 text-white shadow-md shadow-sky-600/20 border-0 transition-all duration-200 flex items-center justify-center gap-1.5 keep-white"
+                              className="h-10 w-32 shrink-0 text-xs font-bold rounded-xl bg-sky-600 hover:bg-sky-500 text-white shadow-md shadow-sky-600/20 border-0 transition-all duration-200 flex items-center justify-center gap-1.5 keep-white cursor-pointer"
                             >
-                              <ExternalLink className="w-3.5 h-3.5" />
-                              {hasApplied ? 'Visit Again ↗' : 'Apply on Site ↗'}
+                              <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+                              <span className="truncate">{hasApplied ? 'Visit Again ↗' : 'Apply on Site ↗'}</span>
                             </button>
                           ) : (
                             <button
                               onClick={() => handleDirectApply(job)}
-                              className={`h-10 w-36 shrink-0 text-xs font-bold rounded-xl transition-all duration-200 flex items-center justify-center gap-1.5 ${
+                              className={`h-10 w-32 shrink-0 text-xs font-bold rounded-xl transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
                                 hasApplied 
                                   ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 opacity-90 cursor-default' 
                                   : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/20 border-0 keep-white'
                               }`}
                               disabled={hasApplied}
                             >
-                              <Send className="w-3.5 h-3.5" />
-                              {hasApplied ? 'Applied' : 'Apply Now'}
+                              <Send className="w-3.5 h-3.5 shrink-0" />
+                              <span>{hasApplied ? 'Applied' : 'Apply Now'}</span>
                             </button>
                           )}
                         </div>
                       </div>
 
-                      <div className="bg-white dark:bg-slate-900 rounded-lg p-2.5 border border-slate-200 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-400 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-1">
-                            <Calendar className="w-3.5 h-3.5 text-indigo-500" />
-                            <span>Deadline: {job.deadline || 'N/A'}</span>
+                      {/* Clean Non-Clipping Sub-Bar for Deadline & Status */}
+                      <div className="bg-slate-50 dark:bg-slate-950/80 rounded-xl p-2.5 border border-slate-200 dark:border-slate-800/80 text-xs flex flex-wrap items-center justify-between gap-2 mt-1">
+                        <div className="flex items-center gap-2.5 flex-wrap">
+                          <div className="flex items-center gap-1.5 font-medium text-slate-700 dark:text-slate-300">
+                            <Calendar className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                            <span>Deadline: <strong className="text-slate-900 dark:text-white font-bold">{job.deadline || 'N/A'}</strong></span>
                           </div>
                           {job.workMode && (
-                            <span className="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-[11px] font-semibold">
+                            <span className="bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 px-2 py-0.5 rounded-md text-[11px] font-bold">
                               {job.workMode}
                             </span>
                           )}
                         </div>
-                        <span className="text-emerald-600 dark:text-emerald-400 font-semibold text-[11px]">{job.status || 'Active'}</span>
+                        <span className="text-emerald-600 dark:text-emerald-400 font-extrabold text-[11px] bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-0.5 rounded-md uppercase tracking-wider">
+                          {job.status || 'Open'}
+                        </span>
                       </div>
                     </div>
                   );
@@ -326,7 +329,7 @@ const DashboardOverview = () => {
             ) : (
               <>
                 {myApplications.map(app => {
-                  const job = jobs.find(j => j.id === app.jobId);
+                  const job = safeJobs.find(j => j.id === app.jobId);
                   return (
                     <div key={`plat-${app.id}`} className="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-slate-950/80 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-indigo-400/40 transition-colors">
                       <div className="space-y-0.5">
@@ -365,7 +368,7 @@ const DashboardOverview = () => {
       <div className="card bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="flex items-center gap-2 text-slate-900 dark:text-white font-bold text-base">
-            <Sparkles className="w-5 h-5 text-emerald-500" /> Approved Career Mentorship Programs & Fees ({mentorApps.filter(m => m.status === 'Approved').length})
+            <Sparkles className="w-5 h-5 text-emerald-500" /> Approved Career Mentorship Programs & Fees ({safeMentorApps.filter(m => m.status === 'Approved').length})
           </h3>
           <span className="text-xs text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 rounded-full">
             Verified Mentors
@@ -376,13 +379,13 @@ const DashboardOverview = () => {
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {mentorApps.filter(m => m.status === 'Approved').length === 0 ? (
+          {safeMentorApps.filter(m => m.status === 'Approved').length === 0 ? (
             <p className="text-slate-500 dark:text-slate-400 text-xs py-4 text-center col-span-2">No mentorship programs currently approved.</p>
           ) : (
-            mentorApps.filter(m => m.status === 'Approved').map(m => {
-              const myRequest = mentorships?.find(req => req.mentorAppId === m.id && (req.menteeName === currentUser?.name || req.menteeEmail === currentUser?.email));
+            safeMentorApps.filter(m => m.status === 'Approved').map(m => {
+              const myRequest = safeMentorships.find(req => req.mentorAppId === m.id && (req.menteeName === currentUser?.name || req.menteeEmail === currentUser?.email));
               const hasApplied = !!myRequest;
-              const requestStatus = myRequest?.status; // 'Pending' | 'Approved' | 'Rejected'
+              const requestStatus = myRequest?.status;
 
               return (
                 <div key={m.id} className="p-4 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-3 flex flex-col justify-between hover:border-emerald-500/30 transition-all">
@@ -393,21 +396,16 @@ const DashboardOverview = () => {
                         {m.mentorshipFee}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2.5 mt-2">
-                      <img 
-                        src="/career_mentor_avatar.jpg" 
-                        alt="Mentor" 
-                        className="w-7 h-7 rounded-full object-cover border border-emerald-500/40 shadow-sm"
-                      />
+                    <div className="flex items-center gap-2 mt-2">
+                      <GraduationCap className="w-4 h-4 text-emerald-500 shrink-0" />
                       <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">Mentor: <span className="font-bold text-slate-900 dark:text-white">{m.mentorName}</span> ({m.company})</p>
                     </div>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 italic line-clamp-2">"{m.description}"</p>
                   </div>
 
                   <div className="pt-2.5 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2">
-                    {/* Application status badge */}
                     {hasApplied ? (
-                      <span className={`h-9 w-44 shrink-0 text-[11px] font-extrabold uppercase rounded-xl border flex items-center justify-center gap-1 ${
+                      <span className={`h-9 px-4 shrink-0 text-[11px] font-extrabold uppercase rounded-xl border flex items-center justify-center gap-1 ${
                         requestStatus === 'Approved'
                           ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
                           : requestStatus === 'Rejected'
@@ -420,11 +418,10 @@ const DashboardOverview = () => {
                       <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Open — Available Now</span>
                     )}
 
-                    {/* Apply button — only if not yet applied */}
                     {!hasApplied && (
                       <button
                         onClick={() => requestMentorshipProgram(m.id, m.mentorName, m.jobTitle, m.mentorshipFee)}
-                        className="h-9 w-44 shrink-0 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/20 border-0 transition-all duration-200 flex items-center justify-center gap-1.5 keep-white"
+                        className="h-9 px-4 shrink-0 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/20 border-0 transition-all duration-200 flex items-center justify-center gap-1.5 keep-white cursor-pointer"
                       >
                         Apply for Mentorship
                       </button>
@@ -439,11 +436,19 @@ const DashboardOverview = () => {
 
       {/* SECTION 4: INBOX — Messages from Mentors & Employers */}
       {(() => {
-        const email = currentUser?.email;
-        const myMessages = messages.filter(msg =>
-          msg.recipients === 'all' || msg.recipientEmails.includes(email)
-        );
-        const unread = myMessages.filter(msg => !msg.readBy.includes(email)).length;
+        const email = currentUser?.email || '';
+        const safeMessages = Array.isArray(messages) ? messages : [];
+        const myMessages = safeMessages.filter(msg => {
+          if (!msg) return false;
+          if (msg.recipients === 'all') return true;
+          const recEmails = Array.isArray(msg.recipientEmails) ? msg.recipientEmails : [];
+          return email && recEmails.includes(email);
+        });
+        const unread = myMessages.filter(msg => {
+          const readBy = Array.isArray(msg?.readBy) ? msg.readBy : [];
+          return email && !readBy.includes(email);
+        }).length;
+
         return (
           <div className="card bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-4">
             <div className="flex items-center justify-between">
@@ -461,10 +466,11 @@ const DashboardOverview = () => {
                 <p className="text-xs text-slate-500 dark:text-slate-400 py-4 text-center">No messages yet. Messages from mentors and employers will appear here.</p>
               ) : (
                 myMessages.map(msg => {
-                  const isUnread = !msg.readBy.includes(email);
+                  const readBy = Array.isArray(msg?.readBy) ? msg.readBy : [];
+                  const isUnread = Boolean(email && !readBy.includes(email));
                   return (
                     <div
-                      key={msg.id}
+                      key={msg.id || Math.random()}
                       onClick={() => isUnread && markMessageRead(msg.id)}
                       className={`p-4 rounded-xl border cursor-pointer transition-all ${
                         isUnread
@@ -474,11 +480,11 @@ const DashboardOverview = () => {
                     >
                       <div className="flex items-center gap-2 flex-wrap mb-1">
                         {isUnread && <span className="w-2 h-2 rounded-full bg-indigo-500 inline-block"></span>}
-                        <span className={`font-bold text-sm ${isUnread ? 'text-indigo-700 dark:text-indigo-300' : 'text-slate-900 dark:text-white'}`}>{msg.subject}</span>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-medium capitalize">{msg.senderRole}</span>
+                        <span className={`font-bold text-sm ${isUnread ? 'text-indigo-700 dark:text-indigo-300' : 'text-slate-900 dark:text-white'}`}>{msg.subject || '(No Subject)'}</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-medium capitalize">{msg.senderRole || 'User'}</span>
                       </div>
                       <p className="text-xs text-slate-600 dark:text-slate-300">{msg.body}</p>
-                      <p className="text-[10px] text-slate-400 mt-1.5">From: <span className="font-semibold">{msg.senderName}</span> &bull; {new Date(msg.sentAt).toLocaleString()}</p>
+                      <p className="text-[10px] text-slate-400 mt-1.5">From: <span className="font-semibold">{msg.senderName || 'Sender'}</span> &bull; {msg.sentAt ? new Date(msg.sentAt).toLocaleString() : 'Recently'}</p>
                     </div>
                   );
                 })
@@ -512,7 +518,7 @@ const DashboardOverview = () => {
               </div>
               <button 
                 onClick={() => setSelectedJobDetail(null)}
-                className="p-1.5 text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="p-1.5 text-slate-400 hover:text-slate-900 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -572,7 +578,7 @@ const DashboardOverview = () => {
             <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-slate-800">
               <button
                 onClick={() => setSelectedJobDetail(null)}
-                className="btn secondary py-2.5 px-4 text-xs font-bold"
+                className="btn secondary py-2.5 px-4 text-xs font-bold cursor-pointer"
               >
                 Close
               </button>
@@ -582,7 +588,7 @@ const DashboardOverview = () => {
                     handleDirectApply(selectedJobDetail);
                     setSelectedJobDetail(null);
                   }}
-                  className="btn py-2.5 px-5 text-xs font-bold bg-sky-600 hover:bg-sky-700 text-white shadow-lg shadow-sky-500/25 border-0 keep-white flex items-center gap-2"
+                  className="btn py-2.5 px-5 text-xs font-bold bg-sky-600 hover:bg-sky-700 text-white shadow-lg shadow-sky-500/25 border-0 keep-white flex items-center gap-2 cursor-pointer"
                 >
                   <ExternalLink className="w-4 h-4" />
                   Apply on External Site ↗
@@ -596,7 +602,7 @@ const DashboardOverview = () => {
                         handleDirectApply(selectedJobDetail);
                         setSelectedJobDetail(null);
                       }}
-                      className={`btn py-2.5 px-5 text-xs font-bold transition-all ${
+                      className={`btn py-2.5 px-5 text-xs font-bold transition-all cursor-pointer ${
                         hasApplied 
                           ? 'bg-slate-200 dark:bg-slate-800 text-slate-500 cursor-default border-0' 
                           : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-500/25 border-0 keep-white'
