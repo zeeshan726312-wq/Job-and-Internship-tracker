@@ -74,8 +74,8 @@ const UserPanel = () => {
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 text-white border border-white/20 rounded-full text-xs font-semibold mb-2 backdrop-blur-md float-icon">
               <Sparkles className="w-3.5 h-3.5 text-amber-300" /> Applicant Portal & Courses
             </div>
-            <h2 className="text-2xl md:text-3xl font-extrabold text-white keep-white tracking-tight">
-              Applicant Dashboard — {applicantName} 👋
+            <h2 className="text-2xl md:text-3xl font-extrabold text-white keep-white tracking-tight flex items-center gap-2">
+              Applicant Dashboard — <span className="text-emerald-200">{applicantName}</span>
             </h2>
             <p className="text-slate-200 text-xs mt-1 font-medium">
               Explore available platform jobs & internships, enroll in mentorship courses, and track direct applications.

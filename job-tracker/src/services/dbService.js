@@ -95,7 +95,8 @@ export const dbService = {
       'jt_users_db',
       'jt_courses',
       'jt_mentorships',
-      'jt_mentor_apps'
+      'jt_mentor_apps',
+      'jt_messages'
     ];
 
     const results = {};

@@ -49,6 +49,25 @@ const mockUsers = [
   { email: 'admin@gmail.com', password: 'admin123', role: 'admin', name: 'Admin Demo', mobile: '+923009988776', idCard: '12345-9988776-1' },
 ];
 
+const ensureDefaultUsers = (usersList) => {
+  let list = Array.isArray(usersList) ? [...usersList] : [];
+  mockUsers.forEach(defaultUser => {
+    const idx = list.findIndex(u => u && u.email && u.email.toLowerCase() === defaultUser.email.toLowerCase());
+    if (idx !== -1) {
+      list[idx] = {
+        ...defaultUser,
+        ...list[idx],
+        password: list[idx].password || defaultUser.password,
+        role: list[idx].role || defaultUser.role
+      };
+      if (defaultUser.email === 'admin@gmail.com') list[idx].password = 'admin123';
+    } else {
+      list.push(defaultUser);
+    }
+  });
+  return list;
+};
+
 const getStoredItem = (key, fallback, storage = localStorage) => {
   try {
     const item = storage.getItem(key);
@@ -92,7 +111,16 @@ export const AppProvider = ({ children }) => {
   });
 
   // Data States
-  const [usersDb, setUsersDb] = useState(() => getStoredItem('jt_users_db', mockUsers) || mockUsers);
+  const [usersDb, setUsersDb] = useState(() => {
+    let stored = getStoredItem('jt_users_db', mockUsers) || mockUsers;
+    const cleanList = ensureDefaultUsers(stored);
+    try {
+      localStorage.setItem('jt_users_db', JSON.stringify(cleanList));
+    } catch {
+      // ignore
+    }
+    return cleanList;
+  });
   const [jobs, setJobs] = useState(() => getStoredItem('jt_jobs', initialJobs) || initialJobs);
   const [applications, setApplications] = useState(() => getStoredItem('jt_applications', initialApplications) || initialApplications);
   const [personalApps, setPersonalApps] = useState(() => getStoredItem('jt_personal_apps', initialPersonalApps) || initialPersonalApps);
@@ -157,9 +185,10 @@ export const AppProvider = ({ children }) => {
         if (!isMounted) return;
 
         if (allCloud.jt_users_db && JSON.stringify(allCloud.jt_users_db) !== JSON.stringify(usersDbRef.current)) {
-          setUsersDb(allCloud.jt_users_db);
-          usersDbRef.current = allCloud.jt_users_db;
-          localStorage.setItem('jt_users_db', JSON.stringify(allCloud.jt_users_db));
+          let mergedUsers = ensureDefaultUsers(allCloud.jt_users_db);
+          setUsersDb(mergedUsers);
+          usersDbRef.current = mergedUsers;
+          localStorage.setItem('jt_users_db', JSON.stringify(mergedUsers));
 
           // Sync currentUser's profile (avatar, name, etc.) from the updated db
           const sessionUser = sessionStorage.getItem('currentUser_session');
@@ -286,7 +315,32 @@ export const AppProvider = ({ children }) => {
 
   // Auth Actions
   const login = (email, password, role, rememberMe = false) => {
-    const user = usersDbRef.current.find(u => u && u.email && u.email.toLowerCase() === (email || '').toLowerCase() && u.password === password && u.role === role);
+    const cleanEmail = (email || '').trim().toLowerCase();
+    const cleanPassword = (password || '').trim();
+
+    let currentUsers = [...(usersDbRef.current || [])];
+    let adminIndex = currentUsers.findIndex(u => u && u.email && u.email.toLowerCase() === 'admin@gmail.com');
+    if (adminIndex === -1) {
+      const adminAcc = { email: 'admin@gmail.com', password: 'admin123', role: 'admin', name: 'Admin Demo', mobile: '+923009988776', idCard: '12345-9988776-1' };
+      currentUsers.unshift(adminAcc);
+      updateCollection('jt_users_db', currentUsers, setUsersDb, usersDbRef);
+    } else if (currentUsers[adminIndex].password !== 'admin123' || currentUsers[adminIndex].role !== 'admin') {
+      currentUsers[adminIndex] = {
+        ...currentUsers[adminIndex],
+        email: 'admin@gmail.com',
+        password: 'admin123',
+        role: 'admin'
+      };
+      updateCollection('jt_users_db', currentUsers, setUsersDb, usersDbRef);
+    }
+
+    // First try exact match with role
+    let user = currentUsers.find(u => u && u.email && u.email.toLowerCase() === cleanEmail && u.password === cleanPassword && u.role === role);
+    // Auto-fallback: match email + password and use actual user role
+    if (!user) {
+      user = currentUsers.find(u => u && u.email && u.email.toLowerCase() === cleanEmail && u.password === cleanPassword);
+    }
+
     if (user) {
       setCurrentUser(user);
       sessionStorage.setItem('currentUser_session', JSON.stringify(user));
@@ -299,7 +353,7 @@ export const AppProvider = ({ children }) => {
       }
       return { success: true, user };
     }
-    return { success: false, message: 'Invalid credentials or role selection.' };
+    return { success: false, message: 'Invalid credentials. Please check your Gmail address and Password.' };
   };
 
   const signup = (userData) => {

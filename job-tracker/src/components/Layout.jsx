@@ -121,16 +121,27 @@ const Layout = () => {
     return name.charAt(0).toUpperCase();
   };
 
-  // Dynamic Header Title & Icon based on Route
+  // Dynamic Header Title & Icon based on Route and Role
   const getHeaderDetails = () => {
     const path = location.pathname;
-    if (path === '/dashboard') return { title: 'Applicant Overview', icon: <LayoutDashboard className="w-5 h-5 text-indigo-400" /> };
-    if (path === '/applicant') return { title: 'Applicant Panel', icon: <UserCheck className="w-5 h-5 text-indigo-400" /> };
+
+    if (currentUser?.role === 'admin') {
+      if (path === '/applications') return { title: 'Admin — System Applications', icon: <FileText className="w-5 h-5 text-indigo-400" /> };
+      return { title: 'Admin Panel', icon: <ShieldCheck className="w-5 h-5 text-indigo-400" /> };
+    }
+
+    if (currentUser?.role === 'employer') {
+      if (path === '/applications') return { title: 'Employer — Candidate Pipeline', icon: <FileText className="w-5 h-5 text-indigo-400" /> };
+      return { title: 'Employer Console', icon: <Briefcase className="w-5 h-5 text-indigo-400" /> };
+    }
+
+    if (currentUser?.role === 'mentor') {
+      if (path === '/applications') return { title: 'Mentor — Student Applications', icon: <FileText className="w-5 h-5 text-indigo-400" /> };
+      return { title: 'Mentorship Portal', icon: <GraduationCap className="w-5 h-5 text-indigo-400" /> };
+    }
+
     if (path === '/applications') return { title: 'Application Tracker', icon: <FileText className="w-5 h-5 text-indigo-400" /> };
-    if (path === '/employer') return { title: 'Employer Console', icon: <Briefcase className="w-5 h-5 text-indigo-400" /> };
-    if (path === '/mentor') return { title: 'Mentorship Portal', icon: <GraduationCap className="w-5 h-5 text-indigo-400" /> };
-    if (path === '/admin') return { title: 'System Administrator', icon: <ShieldCheck className="w-5 h-5 text-indigo-400" /> };
-    return { title: 'Career Command Center', icon: <Sparkles className="w-5 h-5 text-indigo-400" /> };
+    return { title: 'Applicant Overview', icon: <LayoutDashboard className="w-5 h-5 text-indigo-400" /> };
   };
 
   const headerDetails = getHeaderDetails();
@@ -230,14 +241,6 @@ const Layout = () => {
                 <span className="flex-1">Employer Console</span>
               </NavLink>
               <NavLink 
-                to="/applicant" 
-                onClick={() => setMobileOpen(false)}
-                className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-              >
-                <UserCheck className="w-4 h-4 text-indigo-500" /> 
-                <span className="flex-1">Applicant View</span>
-              </NavLink>
-              <NavLink 
                 to="/applications" 
                 onClick={() => setMobileOpen(false)}
                 className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
@@ -259,14 +262,6 @@ const Layout = () => {
                 <GraduationCap className="w-4 h-4 text-indigo-500" /> 
                 <span className="flex-1">Mentorship Portal</span>
               </NavLink>
-              <NavLink 
-                to="/applicant" 
-                onClick={() => setMobileOpen(false)}
-                className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-              >
-                <UserCheck className="w-4 h-4 text-indigo-500" /> 
-                <span className="flex-1">Applicant View</span>
-              </NavLink>
             </>
           )}
 
@@ -282,20 +277,12 @@ const Layout = () => {
                 <span className="flex-1">Admin Panel</span>
               </NavLink>
               <NavLink 
-                to="/applicant" 
-                onClick={() => setMobileOpen(false)}
-                className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-              >
-                <UserCheck className="w-4 h-4 text-indigo-500" /> 
-                <span className="flex-1">Applicant Panel</span>
-              </NavLink>
-              <NavLink 
                 to="/applications" 
                 onClick={() => setMobileOpen(false)}
                 className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
               >
                 <FileText className="w-4 h-4 text-indigo-500" /> 
-                <span className="flex-1">All Applications</span>
+                <span className="flex-1">System Applications</span>
               </NavLink>
             </>
           )}

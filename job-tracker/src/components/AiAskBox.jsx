@@ -11,18 +11,46 @@ import {
   ChevronRight, 
   HelpCircle,
   X,
-  MessageSquare,
   Building2,
   Code2,
   Phone,
   Mail,
-  Award,
   RefreshCw,
-  ChevronDown,
-  ChevronUp
+  KeyRound,
+  Lock,
+  CheckCircle2,
+  ShieldAlert
 } from 'lucide-react';
 
 const KNOWLEDGE_BASE = {
+  passwords: `### 🔒 Security & Password Privacy Policy
+
+• **Strict Confidentiality:** For personal privacy and platform security, user passwords for all panels are confidential and **NEVER** displayed, logged, or shared by the AI Assistant.
+• **Signing In:** Please enter your personal password created during account registration or assigned by your administrator.
+• **Forgot or Need to Change Password?**
+  1. Click **Forgot Password?** on the Sign In page.
+  2. Enter your registered Gmail address.
+  3. Complete verification with your registered CNIC & Mobile Phone number.
+  4. Create your new private password securely.`,
+
+  authHelp: `### 🛡️ How to Sign In, Register & Recover Account
+
+• **1. How to Sign In:**
+  - Select your role (**User**, **Employer**, **Mentor**, **Admin**).
+  - Enter your registered Gmail address & Password.
+  - Check "Keep me signed in" if desired and click **Sign In**.
+
+• **2. How to Register a New Account:**
+  - Toggle to **Create Account** mode above.
+  - Fill in Username, Gmail (\`@gmail.com\`), CNIC / ID Card number, Phone number, and Password.
+  - Select your role (**User**, **Employer**, or **Mentor**) and submit.
+
+• **3. Account Recovery (Forgot Password):**
+  - Click **Forgot Password?** under the Password field.
+  - Enter your registered Gmail.
+  - Verify your registered CNIC & Mobile Phone number.
+  - Set a new password and sign in immediately!`,
+
   founder: `• **Founder & Developer:** **Zeeshan Haider**
 • **Role:** Visionary Founder, Web Developer & Mobile App Developer
 • **Education:** Student at **COMSATS University Sahiwal Campus**
@@ -147,12 +175,12 @@ const AiAskBox = () => {
   const courses = context?.courses || [];
   const mentorApps = context?.mentorApps || [];
 
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(true);
   const [messages, setMessages] = useState([
     {
       id: 1,
       sender: 'ai',
-      text: `👋 Hi! I am the **TrackerPro AI Assistant**.\n\nAsk me anything about **Mentorship Offerings & Fees**, **Jobs & Internships by Organizations**, **Founder Zeeshan Haider**, **Faculty Supervisor Sana Farooq**, **Internship Mentor Muhammad Usman**, or **Tech Stack**!`
+      text: `Hello! I am the **TrackerPro AI Knowledge Assistant**.\n\nAsk me about **How to Login/Register**, **Account Recovery**, **Mentorship Offerings & Fees**, **Jobs & Internships**, **Founder Zeeshan Haider**, or **Supervisors Sana Farooq & Muhammad Usman**!`
     }
   ]);
   const [inputQuery, setInputQuery] = useState('');
@@ -251,6 +279,43 @@ const AiAskBox = () => {
     const q = query.toLowerCase().trim();
     const isYesNoReq = q.includes('yes or no') || q.startsWith('is ') || q.startsWith('does ') || q.startsWith('can ') || q.startsWith('has ') || q.startsWith('are ') || q.startsWith('was ');
 
+    // ── STRICT PRIVACY: NEVER EXPOSE PASSWORDS ───────────────────────
+    if (
+      q.includes('password') || 
+      q.includes('passwords') || 
+      q.includes('admin pass') || 
+      q.includes('user pass') || 
+      q.includes('employer pass') || 
+      q.includes('mentor pass') ||
+      q.includes('give me password') ||
+      q.includes('show password') ||
+      q.includes('panel password') ||
+      q.includes('what is the password') ||
+      q.includes('tell me password') ||
+      q.includes('share password')
+    ) {
+      return KNOWLEDGE_BASE.passwords;
+    }
+
+    // ── LOGIN, REGISTER & RECOVERY MATCHERS ───────────────────────────
+    if (
+      q.includes('how to log') || 
+      q.includes('how to sign') || 
+      q.includes('forgot password') || 
+      q.includes('reset password') || 
+      q.includes('recover') || 
+      q.includes('register') || 
+      q.includes('create account') || 
+      q.includes('sign up') || 
+      q.includes('login help') || 
+      q.includes('cannot login') ||
+      q.includes('cant login') ||
+      q.includes('credential') ||
+      q.includes('gmail')
+    ) {
+      return KNOWLEDGE_BASE.authHelp;
+    }
+
     // ── MENTORSHIP OFFERINGS, DOMAINS & FEES DETECTOR ──────────────────
     if (
       q.includes('offering mentorship') || 
@@ -258,8 +323,6 @@ const AiAskBox = () => {
       q.includes('mentorship fee') || 
       q.includes('mentorship domain') || 
       q.includes('fee in which domain') || 
-      q.includes('fee') ||
-      q.includes('domain') || 
       q.includes('mentorship course') || 
       q.includes('mentorship program') ||
       q.includes('mentorships offered')
@@ -401,13 +464,11 @@ const AiAskBox = () => {
     }
 
     // Default Overview
-    return `### 🚀 Job & Internship Tracker — Overview\n\n` +
-      `**Founder:** Zeeshan Haider (COMSATS University Sahiwal, \`SP24-BCS-077(B)\`)\n` +
-      `**Faculty Supervisor:** Sana Farooq (Professor & Web Developer, COMSATS Sahiwal)\n` +
-      `**Site Supervisor:** Muhammad Usman (Full Stack Engineer, Zynvex Solutions)\n` +
-      `**Internship ID:** \`ZYNVEX-CERT-0299\` (6 Weeks Project)\n` +
-      `**Tech Stack:** React 19, Vite 8, Tailwind CSS, Node.js, Firebase, Vercel, VS Code\n` +
-      `**4 Dashboards:** Applicant, Employer, Mentor, Admin`;
+    return `### 🚀 Job & Internship Tracker — AI Knowledge Base\n\n` +
+      `• **Privacy & Security:** All user account passwords are strictly personal, encrypted, and protected.\n` +
+      `• **Founder:** Zeeshan Haider (COMSATS Sahiwal, \`SP24-BCS-077(B)\`)\n` +
+      `• **Supervisors:** Sana Farooq (Faculty Supervisor, COMSATS) & Muhammad Usman (Site Supervisor, Zynvex Solutions)\n` +
+      `• **Tech Stack:** React 19, Vite 8, Tailwind CSS, Node.js, Firebase Firestore Cloud API, Vercel`;
   };
 
   const handleSend = (textToSend) => {
@@ -426,66 +487,70 @@ const AiAskBox = () => {
       const aiMsg = { id: Date.now() + 1, sender: 'ai', text: aiReplyText };
       setMessages(prev => [...prev, aiMsg]);
       setIsTyping(false);
-    }, 350);
+    }, 300);
   };
 
   const quickQuestions = [
-    "Mentorship offerings & fees",
-    "Jobs & Internships offered by organizations",
-    "What is Node.js & why is it used?",
-    "Why use React 19?",
-    "Faculty Supervisor Sana Farooq",
-    "Internship Mentor Muhammad Usman"
+    "🔒 Password Privacy Policy",
+    "🛡️ How to login & recover account",
+    "🎓 Mentorship offerings & fees",
+    "🏢 Jobs & Internships by organizations",
+    "👨‍💻 Founder Zeeshan Haider",
+    "👩‍🏫 Supervisors Sana & Usman"
   ];
 
   const renderFormattedText = (text) => {
+    if (!text) return null;
     const lines = text.split('\n');
     return lines.map((line, idx) => {
       if (line.startsWith('### ')) {
-        return <h4 key={idx} className="font-extrabold text-sm text-indigo-300 mb-1 mt-1">{line.replace('### ', '')}</h4>;
+        return <h4 key={idx} className="font-extrabold text-xs sm:text-sm text-indigo-600 dark:text-indigo-300 mb-1 mt-1">{line.replace('### ', '')}</h4>;
       }
       
       const formattedLine = line.split(/(\*\*.*?\*\*|\`.*?\`)/g).map((part, pIdx) => {
         if (part.startsWith('**') && part.endsWith('**')) {
-          return <strong key={pIdx} className="font-extrabold text-white">{part.slice(2, -2)}</strong>;
+          return <strong key={pIdx} className="font-extrabold text-slate-900 dark:text-white">{part.slice(2, -2)}</strong>;
         }
         if (part.startsWith('`') && part.endsWith('`')) {
-          return <code key={pIdx} className="px-1.5 py-0.5 rounded bg-slate-950 text-indigo-400 font-mono text-[11px] border border-slate-800">{part.slice(1, -1)}</code>;
+          return <code key={pIdx} className="px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-slate-950 text-indigo-700 dark:text-indigo-300 font-mono text-[11px] border border-indigo-200 dark:border-slate-800 font-bold">{part.slice(1, -1)}</code>;
         }
         return part;
       });
 
-      return <p key={idx} className="text-xs leading-relaxed my-0.5 text-slate-200">{formattedLine}</p>;
+      return <p key={idx} className="text-xs leading-relaxed my-0.5 text-slate-700 dark:text-slate-200">{formattedLine}</p>;
     });
   };
 
   return (
-    <div className="w-full bg-slate-900/90 border border-indigo-500/30 backdrop-blur-2xl rounded-3xl shadow-2xl overflow-hidden transition-all duration-300">
+    <div className="w-full bg-white dark:bg-slate-900/95 border border-indigo-200 dark:border-indigo-500/40 backdrop-blur-2xl rounded-3xl shadow-xl dark:shadow-2xl overflow-hidden transition-all duration-300">
       
       {/* COMPACT DEFAULT CARD: Know about us */}
       {!isOpen ? (
         <div 
           onClick={() => setIsOpen(true)}
-          className="p-3.5 bg-slate-900/90 hover:bg-slate-900 border border-indigo-500/30 rounded-3xl cursor-pointer transition-all duration-300 hover:border-indigo-500/60 shadow-lg group flex items-center justify-between"
+          className="p-4 bg-gradient-to-r from-slate-50 via-indigo-50/80 to-slate-50 dark:from-slate-900 dark:via-indigo-950/70 dark:to-slate-900 border border-indigo-200 dark:border-indigo-500/40 rounded-3xl cursor-pointer transition-all duration-300 hover:border-indigo-400 shadow-md group flex items-center justify-between"
         >
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-2xl bg-indigo-600/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400 group-hover:scale-105 transition-transform">
-              <Bot className="w-5 h-5 animate-pulse" />
+            <div className="w-10 h-10 rounded-2xl bg-indigo-100 dark:bg-indigo-600/25 border border-indigo-300 dark:border-indigo-400/40 flex items-center justify-center text-indigo-600 dark:text-indigo-300 group-hover:scale-105 transition-transform shadow-sm">
+              <Bot className="w-5 h-5 animate-pulse text-indigo-600 dark:text-indigo-300" />
             </div>
             <div>
-              <h3 className="text-xs font-extrabold text-white flex items-center gap-2">
-                <span>Know about us</span>
-                <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-semibold">
-                  Live AI
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white">
+                  AI Knowledge & Login Assistant
+                </h3>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 dark:bg-emerald-500/20 border border-emerald-500/30 dark:border-emerald-500/40 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold shrink-0">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Live Active
                 </span>
-              </h3>
-              <p className="text-[11px] text-slate-400 group-hover:text-slate-300 transition-colors">
-                Click to ask AI about Founder, Mentors & Tech Stack
+              </div>
+              <p className="text-[11px] text-slate-600 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
+                Click to view Login Help, Account Recovery, Founder & Supervisors
               </p>
             </div>
           </div>
 
-          <div className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold transition-all shadow-md shadow-indigo-500/25 flex items-center gap-1.5 shrink-0">
+          <div className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-extrabold transition-all shadow-md shadow-indigo-500/25 flex items-center gap-1.5 shrink-0 keep-white">
             <Sparkles className="w-3.5 h-3.5" />
             <span>Open AI Chat</span>
           </div>
@@ -495,83 +560,86 @@ const AiAskBox = () => {
         <div className="space-y-0">
           
           {/* Header */}
-          <div className="p-3.5 bg-gradient-to-r from-slate-900 via-indigo-950/80 to-slate-900 border-b border-indigo-500/20 flex items-center justify-between">
+          <div className="p-3.5 bg-gradient-to-r from-slate-100 via-indigo-100/80 to-slate-100 dark:from-slate-900 dark:via-indigo-950 dark:to-slate-900 border-b border-indigo-200 dark:border-indigo-500/30 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-indigo-600/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400">
-                <Bot className="w-4 h-4 animate-pulse" />
+              <div className="w-9 h-9 rounded-2xl bg-indigo-100 dark:bg-indigo-600/30 border border-indigo-300 dark:border-indigo-400/50 flex items-center justify-center text-indigo-600 dark:text-indigo-300 shadow-sm">
+                <Bot className="w-5 h-5 animate-pulse text-indigo-600 dark:text-indigo-300" />
               </div>
               <div>
-                <h3 className="text-xs font-extrabold text-white flex items-center gap-1.5">
-                  <span>Know about us</span>
-                  <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-semibold">
-                    Live Knowledge AI
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white">
+                    AI Knowledge & Login Assistant
+                  </h3>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 dark:bg-emerald-500/20 border border-emerald-500/30 dark:border-emerald-500/40 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold shrink-0">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    Live Active
                   </span>
-                </h3>
-                <p className="text-[10px] text-slate-400">Node.js, React, Vite, Tailwind, Mentors & Project Details</p>
+                </div>
+                <p className="text-[10px] text-slate-600 dark:text-slate-300 font-medium">Login Guides, Account Recovery, Node, React, Vite, Firebase & Supervisors</p>
               </div>
             </div>
 
             <button
               onClick={() => setIsOpen(false)}
-              className="px-2.5 py-1 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white text-[11px] font-bold transition-all flex items-center gap-1 shadow-sm"
-              title="Close chat and return to simple box"
+              className="px-3 py-1 rounded-xl bg-slate-200 dark:bg-slate-950/80 hover:bg-slate-300 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white text-[11px] font-bold transition-all flex items-center gap-1 shadow-sm cursor-pointer"
+              title="Minimize chat box"
             >
-              <X className="w-3.5 h-3.5 text-rose-400" /> Close Chat
+              <X className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400" /> Minimize
             </button>
           </div>
 
-          {/* Recommended Question Chips */}
-          <div className="px-3 py-2 bg-slate-950/80 border-b border-slate-800/80 flex items-center gap-1.5 overflow-x-auto scrollbar-none">
-            <span className="text-[10px] text-indigo-300 font-bold uppercase tracking-wider shrink-0 flex items-center gap-1">
-              <HelpCircle className="w-3 h-3 text-indigo-400" /> Recommended:
+          {/* Quick Recommended Question Chips */}
+          <div className="px-3 py-2 bg-slate-50 dark:bg-slate-950/90 border-b border-slate-200 dark:border-slate-800 flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+            <span className="text-[10px] text-indigo-600 dark:text-indigo-300 font-extrabold uppercase tracking-wider shrink-0 flex items-center gap-1">
+              <HelpCircle className="w-3 h-3 text-indigo-500 dark:text-indigo-400" /> Quick Topics:
             </span>
             {quickQuestions.map((q, idx) => (
               <button
                 key={idx}
                 onClick={() => handleSend(q)}
-                className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-indigo-600/20 border border-slate-800 hover:border-indigo-500/40 text-slate-300 hover:text-white text-[11px] font-medium transition-all shrink-0 flex items-center gap-1 whitespace-nowrap"
+                className="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-900 hover:bg-indigo-50 dark:hover:bg-indigo-600/30 border border-slate-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-500/50 text-slate-700 dark:text-slate-200 hover:text-indigo-700 dark:hover:text-white text-[11px] font-semibold transition-all shrink-0 flex items-center gap-1 whitespace-nowrap cursor-pointer shadow-xs"
               >
                 <span>{q}</span>
-                <ChevronRight className="w-3 h-3 text-slate-500" />
+                <ChevronRight className="w-3 h-3 text-indigo-500 dark:text-indigo-400" />
               </button>
             ))}
           </div>
 
-          {/* Chat History */}
-          <div className="p-3.5 space-y-3 max-h-64 overflow-y-auto">
+          {/* Chat History Container */}
+          <div className="p-4 space-y-3.5 max-h-72 overflow-y-auto bg-slate-50/50 dark:bg-slate-950/60">
             {messages.map((msg) => (
               <div
                 key={msg.id}
-                className={`flex gap-2 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                className={`flex gap-2.5 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 {msg.sender === 'ai' && (
-                  <div className="w-6 h-6 rounded-lg bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 flex items-center justify-center shrink-0 mt-0.5">
-                    <Bot className="w-3.5 h-3.5" />
+                  <div className="w-7 h-7 rounded-xl bg-indigo-100 dark:bg-indigo-600/30 border border-indigo-200 dark:border-indigo-500/40 text-indigo-600 dark:text-indigo-300 flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
+                    <Bot className="w-4 h-4" />
                   </div>
                 )}
                 
                 <div
-                  className={`p-3 rounded-2xl max-w-[85%] text-xs shadow-md ${
+                  className={`p-3.5 rounded-2xl max-w-[88%] text-xs shadow-md leading-relaxed ${
                     msg.sender === 'user'
-                      ? 'bg-indigo-600 text-white rounded-tr-none font-medium'
-                      : 'bg-slate-950/90 border border-slate-800 text-slate-200 rounded-tl-none space-y-1'
+                      ? 'bg-indigo-600 text-white rounded-tr-none font-semibold keep-white'
+                      : 'bg-white dark:bg-slate-900/95 border border-slate-200 dark:border-indigo-500/30 text-slate-800 dark:text-slate-100 rounded-tl-none space-y-1.5'
                   }`}
                 >
                   {msg.sender === 'user' ? msg.text : renderFormattedText(msg.text)}
                 </div>
 
                 {msg.sender === 'user' && (
-                  <div className="w-6 h-6 rounded-lg bg-indigo-500/20 border border-indigo-500/40 text-indigo-300 flex items-center justify-center shrink-0 mt-0.5">
-                    <UserCheck className="w-3.5 h-3.5" />
+                  <div className="w-7 h-7 rounded-xl bg-indigo-500/20 border border-indigo-400/40 text-indigo-600 dark:text-indigo-200 flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
+                    <UserCheck className="w-4 h-4" />
                   </div>
                 )}
               </div>
             ))}
 
             {isTyping && (
-              <div className="flex gap-2 items-center text-slate-400 text-xs pl-1">
-                <RefreshCw className="w-3.5 h-3.5 animate-spin text-indigo-400" />
-                <span className="italic">AI is searching knowledge base...</span>
+              <div className="flex gap-2 items-center text-slate-600 dark:text-slate-300 text-xs pl-2 font-medium">
+                <RefreshCw className="w-3.5 h-3.5 animate-spin text-indigo-500 dark:text-indigo-400" />
+                <span className="italic">AI Assistant is writing response...</span>
               </div>
             )}
 
@@ -581,19 +649,19 @@ const AiAskBox = () => {
           {/* Interactive Chat Input Form */}
           <form
             onSubmit={(e) => { e.preventDefault(); handleSend(); }}
-            className="p-2.5 bg-slate-950 border-t border-slate-800 flex items-center gap-2"
+            className="p-3 bg-white dark:bg-slate-950 border-t border-slate-200 dark:border-indigo-500/30 flex items-center gap-2"
           >
             <input
               type="text"
-              placeholder="Ask what is Node, why use React, Vite, Firebase..."
+              placeholder="Ask about Login Help, Account Recovery, Founder, Mentors, Node, React..."
               value={inputQuery}
               onChange={(e) => setInputQuery(e.target.value)}
-              className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-all"
+              className="flex-1 bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 focus:border-indigo-500 dark:focus:border-indigo-400 rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none transition-all shadow-inner"
             />
             <button
               type="submit"
               disabled={!inputQuery.trim() || isTyping}
-              className="p-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white font-bold transition-all shadow-md shadow-indigo-500/20 flex items-center justify-center"
+              className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white font-extrabold transition-all shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-1 keep-white cursor-pointer"
               title="Send Question"
             >
               <Send className="w-4 h-4" />

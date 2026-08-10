@@ -64,12 +64,13 @@ const AuthPage = () => {
     if (isLogin) {
       const res = login(email, password, role, rememberMe);
       if (res.success) {
-        if (role === 'admin') navigate('/admin');
-        else if (role === 'employer') navigate('/employer');
-        else if (role === 'mentor') navigate('/mentor');
+        const effectiveRole = res.user?.role || role;
+        if (effectiveRole === 'admin') navigate('/admin');
+        else if (effectiveRole === 'employer') navigate('/employer');
+        else if (effectiveRole === 'mentor') navigate('/mentor');
         else navigate('/');
       } else {
-        setError(res.message || res.error || 'Invalid credentials or role selection.');
+        setError(res.message || res.error || 'Invalid credentials.');
       }
     } else {
       if (!username.trim()) {
