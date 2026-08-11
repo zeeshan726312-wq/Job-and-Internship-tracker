@@ -15,7 +15,9 @@ import {
   Edit2,
   Trash2,
   X,
-  Check
+  Check,
+  FileCheck,
+  Link as LinkIcon
 } from 'lucide-react';
 
 const StatusBadge = ({ status }) => {
@@ -126,7 +128,10 @@ const ApplicationsList = () => {
         type: job?.type || 'Job',
         status: app.status || 'Applied',
         deadline: job?.deadline || 'N/A',
-        link: job?.externalUrl || '#',
+        link: app.applicantLink || job?.externalUrl || '#',
+        resumeFileName: app.resumeFileName || '',
+        resumeFileData: app.resumeFileData || '',
+        applicantPhone: app.applicantPhone || '',
         isExternal: job?.isExternal || false,
         externalUrl: job?.externalUrl || '',
         interviewSchedule: app.interviewSchedule || '',
@@ -394,18 +399,31 @@ const ApplicationsList = () => {
                         </div>
 
                         {/* Read-Only Status Display for Applicant */}
-                        <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between">
-                          <StatusBadge status={app.status} />
+                        <div className="pt-2 border-t border-slate-800/80 flex flex-col gap-1.5">
+                          <div className="flex items-center justify-between">
+                            <StatusBadge status={app.status} />
 
-                          {app.link && app.link !== '#' && (
+                            {app.link && app.link !== '#' && (
+                              <a
+                                href={app.link.startsWith('http') ? app.link : `https://${app.link}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-[11px] text-indigo-400 font-bold hover:underline"
+                                title="Portfolio / Link"
+                              >
+                                <LinkIcon className="w-3 h-3" /> Link ↗
+                              </a>
+                            )}
+                          </div>
+
+                          {app.resumeFileName && (
                             <a
-                              href={app.link}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-slate-400 hover:text-indigo-400 p-1"
-                              title="External Link"
+                              href={app.resumeFileData || '#'}
+                              download={app.resumeFileName}
+                              className="inline-flex items-center gap-1 text-[11px] text-emerald-400 font-bold hover:underline"
+                              title="Download CV"
                             >
-                              <ExternalLink className="w-3.5 h-3.5" />
+                              <FileCheck className="w-3.5 h-3.5 text-emerald-500" /> CV: {app.resumeFileName}
                             </a>
                           )}
                         </div>

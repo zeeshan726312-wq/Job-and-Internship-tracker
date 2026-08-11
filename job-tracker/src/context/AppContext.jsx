@@ -407,24 +407,48 @@ export const AppProvider = ({ children }) => {
   };
 
   // Application Actions
-  const applyForJob = (jobId, applicantName) => {
+  const applyForJob = (jobId, applicantName, extraDetails = {}) => {
     const nameToUse = applicantName || currentUser?.name || currentUser?.username || 'User Demo';
-    const emailToUse = currentUser?.email || 'user@gmail.com';
-    const existing = applicationsRef.current.find(a => String(a.jobId) === String(jobId) && 
+    const emailToUse = extraDetails.applicantEmail || currentUser?.email || 'user@gmail.com';
+    const phoneToUse = extraDetails.applicantPhone || currentUser?.mobile || '';
+    const existingIndex = applicationsRef.current.findIndex(a => String(a.jobId) === String(jobId) && 
       (a.applicantName === nameToUse || (emailToUse && a.applicantEmail === emailToUse))
     );
-    if (!existing) {
+    
+    if (existingIndex !== -1) {
+      // Update existing application with fresh details if re-applied
+      const updatedApps = [...applicationsRef.current];
+      updatedApps[existingIndex] = {
+        ...updatedApps[existingIndex],
+        applicantName: nameToUse,
+        applicantEmail: emailToUse,
+        applicantPhone: phoneToUse,
+        applicantLink: extraDetails.applicantLink || updatedApps[existingIndex].applicantLink || '',
+        resumeFileName: extraDetails.resumeFileName || updatedApps[existingIndex].resumeFileName || '',
+        resumeFileData: extraDetails.resumeFileData || updatedApps[existingIndex].resumeFileData || '',
+        coverNote: extraDetails.coverNote || updatedApps[existingIndex].coverNote || '',
+        status: updatedApps[existingIndex].status || 'Applied'
+      };
+      updateCollection('jt_applications', updatedApps, setApplications, applicationsRef);
+      return updatedApps[existingIndex];
+    } else {
       const newApp = { 
         id: Date.now(), 
         jobId, 
         applicantName: nameToUse, 
         applicantEmail: emailToUse,
+        applicantPhone: phoneToUse,
+        applicantLink: extraDetails.applicantLink || '',
+        resumeFileName: extraDetails.resumeFileName || '',
+        resumeFileData: extraDetails.resumeFileData || '',
+        coverNote: extraDetails.coverNote || '',
         status: 'Applied', 
         interviewSchedule: '', 
         feedback: '' 
       };
       const updatedApps = [...applicationsRef.current, newApp];
       updateCollection('jt_applications', updatedApps, setApplications, applicationsRef);
+      return newApp;
     }
   };
 

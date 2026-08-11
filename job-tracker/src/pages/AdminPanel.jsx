@@ -14,7 +14,9 @@ import {
   PlusCircle,
   X,
   UserCheck,
-  ExternalLink
+  ExternalLink,
+  Link as LinkIcon,
+  FileCheck
 } from 'lucide-react';
 
 const AdminPanel = () => {
@@ -689,8 +691,33 @@ const AdminPanel = () => {
                       {app.applicantEmail && (
                         <p className="text-[11px] text-slate-400 font-medium mt-0.5">Email: {app.applicantEmail}</p>
                       )}
+                      
+                      <div className="flex flex-wrap items-center gap-2 mt-1.5 text-[11px]">
+                        {app.applicantLink && (
+                          <a 
+                            href={app.applicantLink.startsWith('http') ? app.applicantLink : `https://${app.applicantLink}`} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/20 font-bold hover:underline"
+                          >
+                            <LinkIcon className="w-3 h-3" /> Portfolio Link ↗
+                          </a>
+                        )}
+
+                        {app.resumeFileName && (
+                          <a 
+                            href={app.resumeFileData || '#'} 
+                            download={app.resumeFileName}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20 font-bold hover:underline"
+                            title="Download CV"
+                          >
+                            <FileCheck className="w-3 h-3 text-emerald-500" /> Download CV ({app.resumeFileName})
+                          </a>
+                        )}
+                      </div>
+
                       {app.interviewSchedule && (
-                        <p className="text-[11px] text-purple-600 dark:text-purple-400 font-semibold mt-0.5 flex items-center gap-1">
+                        <p className="text-[11px] text-purple-600 dark:text-purple-400 font-semibold mt-1 flex items-center gap-1">
                           <Video className="w-3 h-3" /> Interview: {app.interviewSchedule}
                         </p>
                       )}

@@ -13,7 +13,10 @@ import {
   GraduationCap,
   Sparkles,
   BookOpen,
-  ShieldCheck
+  ShieldCheck,
+  Link as LinkIcon,
+  FileCheck,
+  FileText
 } from 'lucide-react';
 
 const EmployerPanel = () => {
@@ -279,6 +282,7 @@ const EmployerPanel = () => {
               <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-semibold uppercase text-[10px]">
                 <th className="p-3">Applicant Name</th>
                 <th className="p-3">Applied Position</th>
+                <th className="p-3">Link & CV Attachment</th>
                 <th className="p-3">Current Status</th>
                 <th className="p-3">Schedule / Feedback</th>
                 <th className="p-3 text-right">Actions</th>
@@ -287,18 +291,52 @@ const EmployerPanel = () => {
             <tbody className="divide-y divide-slate-200 dark:divide-slate-800/60">
               {relevantApplications.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="p-8 text-center text-slate-500 dark:text-slate-400">No applicant submissions recorded yet.</td>
+                  <td colSpan={6} className="p-8 text-center text-slate-500 dark:text-slate-400">No applicant submissions recorded yet.</td>
                 </tr>
               ) : (
                 relevantApplications.map(app => {
                   const job = safeJobs.find(j => j?.id === app?.jobId);
                   return (
                     <tr key={app.id} className="hover:bg-slate-50 dark:hover:bg-slate-950/60 transition-colors">
-                      <td className="p-3 font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                        <UserCheck className="w-4 h-4 text-emerald-500" />
-                        {app.applicantName}
+                      <td className="p-3 font-bold text-slate-900 dark:text-white">
+                        <div className="flex items-center gap-2">
+                          <UserCheck className="w-4 h-4 text-emerald-500 shrink-0" />
+                          <div>
+                            <span>{app.applicantName}</span>
+                            {app.applicantEmail && <p className="text-[10px] text-slate-400 font-normal">{app.applicantEmail}</p>}
+                          </div>
+                        </div>
                       </td>
                       <td className="p-3 text-slate-600 dark:text-slate-300 font-medium">{job?.title || 'Platform Position'}</td>
+                      <td className="p-3">
+                        <div className="flex flex-col gap-1 text-[11px]">
+                          {app.applicantLink ? (
+                            <a
+                              href={app.applicantLink.startsWith('http') ? app.applicantLink : `https://${app.applicantLink}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-indigo-600 dark:text-indigo-400 font-bold hover:underline"
+                            >
+                              <LinkIcon className="w-3 h-3" /> Link ↗
+                            </a>
+                          ) : (
+                            <span className="text-slate-400">No link</span>
+                          )}
+
+                          {app.resumeFileName ? (
+                            <a
+                              href={app.resumeFileData || '#'}
+                              download={app.resumeFileName}
+                              className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold hover:underline"
+                              title="Download Candidate CV"
+                            >
+                              <FileCheck className="w-3 h-3 text-emerald-500" /> CV: {app.resumeFileName}
+                            </a>
+                          ) : (
+                            <span className="text-slate-400">No CV</span>
+                          )}
+                        </div>
+                      </td>
                       <td className="p-3">
                         <select
                           value={app.status || 'Applied'}

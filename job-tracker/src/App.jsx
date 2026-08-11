@@ -36,12 +36,22 @@ function App() {
             {/* Direct Applicant Panel Routes */}
             <Route path="applicant" element={
               <ProtectedRoute allowedRoles={['user', 'employer', 'mentor', 'admin']}>
-                <DashboardOverview />
+                <UserPanel defaultTab="all" />
               </ProtectedRoute>
             } />
             <Route path="user" element={
               <ProtectedRoute allowedRoles={['user', 'employer', 'mentor', 'admin']}>
-                <DashboardOverview />
+                <UserPanel defaultTab="all" />
+              </ProtectedRoute>
+            } />
+            <Route path="jobs" element={
+              <ProtectedRoute allowedRoles={['user', 'employer', 'mentor', 'admin']}>
+                <UserPanel defaultTab="jobs" />
+              </ProtectedRoute>
+            } />
+            <Route path="mentorship" element={
+              <ProtectedRoute allowedRoles={['user', 'employer', 'mentor', 'admin']}>
+                <UserPanel defaultTab="mentorship" />
               </ProtectedRoute>
             } />
 

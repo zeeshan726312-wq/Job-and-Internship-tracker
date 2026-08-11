@@ -18,7 +18,14 @@ import {
   MessageSquare,
   Bell,
   ExternalLink,
-  GraduationCap
+  GraduationCap,
+  Upload,
+  Link as LinkIcon,
+  User,
+  Mail,
+  Phone,
+  FileCheck,
+  AlertCircle
 } from 'lucide-react';
 
 const StatusIcon = ({ status }) => {
@@ -55,18 +62,82 @@ const DashboardOverview = () => {
   const [applySuccessMsg, setApplySuccessMsg] = useState('');
   const [selectedJobDetail, setSelectedJobDetail] = useState(null);
 
-  const handleDirectApply = (job) => {
-    if (!job) return;
-    const applicantName = currentUser?.name || currentUser?.username || 'User';
-    if (job.isExternal && job.externalUrl) {
-      window.open(job.externalUrl, '_blank', 'noopener,noreferrer');
-      applyForJob(job.id, applicantName);
-      setApplySuccessMsg(`Opened "${job.title}" external page! Application tracked in your pipeline.`);
-    } else {
-      applyForJob(job.id, applicantName);
-      setApplySuccessMsg(`Application for "${job.title}" submitted successfully! Real-time status update saved.`);
+  // Application Modal States
+  const [showApplyModal, setShowApplyModal] = useState(false);
+  const [selectedApplyJob, setSelectedApplyJob] = useState(null);
+  const [applicantName, setApplicantName] = useState('');
+  const [applicantEmail, setApplicantEmail] = useState('');
+  const [applicantPhone, setApplicantPhone] = useState('');
+  const [applicantLink, setApplicantLink] = useState('');
+  const [cvFile, setCvFile] = useState(null);
+  const [coverNote, setCoverNote] = useState('');
+  const [applyError, setApplyError] = useState('');
+
+  const openApplyModal = (job) => {
+    setSelectedApplyJob(job);
+    setApplicantName(currentUser?.name || currentUser?.username || '');
+    setApplicantEmail(currentUser?.email || '');
+    setApplicantPhone(currentUser?.mobile || '');
+    setApplicantLink('');
+    setCvFile(null);
+    setCoverNote('');
+    setApplyError('');
+    setShowApplyModal(true);
+  };
+
+  const handleCvChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) {
+        setApplyError('File size exceeds 10MB limit. Please choose a smaller file.');
+        return;
+      }
+      setApplyError('');
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setCvFile({
+          name: file.name,
+          size: (file.size / 1024).toFixed(1) + ' KB',
+          data: reader.result
+        });
+      };
+      reader.readAsDataURL(file);
     }
-    setTimeout(() => setApplySuccessMsg(''), 4000);
+  };
+
+  const handleApplySubmit = (e) => {
+    e.preventDefault();
+    setApplyError('');
+
+    if (!selectedApplyJob) return;
+
+    if (selectedApplyJob.isExternal && selectedApplyJob.externalUrl) {
+      window.open(selectedApplyJob.externalUrl, '_blank', 'noopener,noreferrer');
+    }
+
+    if (!applicantLink.trim()) {
+      setApplyError('Please provide a Portfolio or LinkedIn link.');
+      return;
+    }
+
+    if (!cvFile) {
+      setApplyError('Please upload your CV / Resume file.');
+      return;
+    }
+
+    const currentApplicantName = currentUser?.name || currentUser?.username || 'User';
+    applyForJob(selectedApplyJob.id, applicantName.trim() || currentApplicantName, {
+      applicantEmail: applicantEmail.trim(),
+      applicantPhone: applicantPhone.trim(),
+      applicantLink: applicantLink.trim(),
+      resumeFileName: cvFile.name,
+      resumeFileData: cvFile.data,
+      coverNote: coverNote.trim()
+    });
+
+    setApplySuccessMsg(`Application for "${selectedApplyJob.title}" submitted successfully with your CV and portfolio link!`);
+    setShowApplyModal(false);
+    setTimeout(() => setApplySuccessMsg(''), 4500);
   };
 
   const isUserApp = (app) => {
@@ -262,7 +333,7 @@ const DashboardOverview = () => {
                           </button>
                           {job.isExternal ? (
                             <button
-                              onClick={() => handleDirectApply(job)}
+                              onClick={() => openApplyModal(job)}
                               className="h-10 w-32 shrink-0 text-xs font-bold rounded-xl bg-sky-600 hover:bg-sky-500 text-white shadow-md shadow-sky-600/20 border-0 transition-all duration-200 flex items-center justify-center gap-1.5 keep-white cursor-pointer"
                             >
                               <ExternalLink className="w-3.5 h-3.5 shrink-0" />
@@ -270,13 +341,12 @@ const DashboardOverview = () => {
                             </button>
                           ) : (
                             <button
-                              onClick={() => handleDirectApply(job)}
+                              onClick={() => openApplyModal(job)}
                               className={`h-10 w-32 shrink-0 text-xs font-bold rounded-xl transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
                                 hasApplied 
                                   ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 opacity-90 cursor-default' 
                                   : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/20 border-0 keep-white'
                               }`}
-                              disabled={hasApplied}
                             >
                               <Send className="w-3.5 h-3.5 shrink-0" />
                               <span>{hasApplied ? 'Applied' : 'Apply Now'}</span>
@@ -589,8 +659,9 @@ const DashboardOverview = () => {
               {selectedJobDetail.isExternal ? (
                 <button
                   onClick={() => {
-                    handleDirectApply(selectedJobDetail);
+                    const jobToApply = selectedJobDetail;
                     setSelectedJobDetail(null);
+                    openApplyModal(jobToApply);
                   }}
                   className="btn py-2.5 px-5 text-xs font-bold bg-sky-600 hover:bg-sky-700 text-white shadow-lg shadow-sky-500/25 border-0 keep-white flex items-center gap-2 cursor-pointer"
                 >
@@ -603,23 +674,200 @@ const DashboardOverview = () => {
                   return (
                     <button
                       onClick={() => {
-                        handleDirectApply(selectedJobDetail);
+                        const jobToApply = selectedJobDetail;
                         setSelectedJobDetail(null);
+                        openApplyModal(jobToApply);
                       }}
                       className={`btn py-2.5 px-5 text-xs font-bold transition-all cursor-pointer ${
                         hasApplied 
-                          ? 'bg-slate-200 dark:bg-slate-800 text-slate-500 cursor-default border-0' 
+                          ? 'bg-slate-200 dark:bg-slate-800 text-slate-500 border-0' 
                           : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-500/25 border-0 keep-white'
                       }`}
-                      disabled={hasApplied}
                     >
                       <Send className="w-4 h-4" />
-                      {hasApplied ? '✓ Already Applied' : 'Submit 1-Click Application'}
+                      {hasApplied ? 'Update Application' : 'Apply Now'}
                     </button>
                   );
                 })()
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* JOB APPLICATION MODAL (DETAILS, LINK & CV UPLOAD) */}
+      {showApplyModal && selectedApplyJob && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 w-full max-w-lg shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+            
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
+              <div>
+                <span className="text-[10px] uppercase font-bold text-indigo-500 tracking-wider">Job Application</span>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <Briefcase className="w-5 h-5 text-emerald-500" /> {selectedApplyJob.title}
+                </h3>
+                <p className="text-xs text-slate-500">{selectedApplyJob.company} • {selectedApplyJob.type || 'Job'}</p>
+              </div>
+              <button 
+                onClick={() => setShowApplyModal(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {applyError && (
+              <div className="p-3 bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 rounded-xl text-xs font-bold flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" /> {applyError}
+              </div>
+            )}
+
+            <form onSubmit={handleApplySubmit} className="space-y-4">
+              {/* Applicant Name */}
+              <div>
+                <label className="form-label text-xs font-bold text-slate-700 dark:text-slate-300">Applicant Full Name *</label>
+                <div className="relative flex items-center mt-1">
+                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                    <User className="w-4 h-4" />
+                  </div>
+                  <input
+                    type="text"
+                    value={applicantName}
+                    onChange={(e) => setApplicantName(e.target.value)}
+                    placeholder="Your Full Name"
+                    className="input-field w-full !pl-10 text-xs py-2.5 bg-white dark:bg-slate-950/80 text-slate-900 dark:text-white border-slate-300 dark:border-slate-800"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Applicant Gmail */}
+              <div>
+                <label className="form-label text-xs font-bold text-slate-700 dark:text-slate-300">Gmail Address *</label>
+                <div className="relative flex items-center mt-1">
+                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                    <Mail className="w-4 h-4" />
+                  </div>
+                  <input
+                    type="email"
+                    value={applicantEmail}
+                    onChange={(e) => setApplicantEmail(e.target.value)}
+                    placeholder="user@gmail.com"
+                    className="input-field w-full !pl-10 text-xs py-2.5 bg-white dark:bg-slate-950/80 text-slate-900 dark:text-white border-slate-300 dark:border-slate-800"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Applicant Phone */}
+              <div>
+                <label className="form-label text-xs font-bold text-slate-700 dark:text-slate-300">Contact / Phone Number *</label>
+                <div className="relative flex items-center mt-1">
+                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                    <Phone className="w-4 h-4" />
+                  </div>
+                  <input
+                    type="text"
+                    value={applicantPhone}
+                    onChange={(e) => setApplicantPhone(e.target.value)}
+                    placeholder="+92 300 1234567"
+                    className="input-field w-full !pl-10 text-xs py-2.5 bg-white dark:bg-slate-950/80 text-slate-900 dark:text-white border-slate-300 dark:border-slate-800"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Portfolio / Professional Profile Link */}
+              <div>
+                <label className="form-label text-xs font-bold text-slate-700 dark:text-slate-300">
+                  Portfolio / LinkedIn Link *
+                </label>
+                <div className="relative flex items-center mt-1">
+                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-indigo-500 pointer-events-none">
+                    <LinkIcon className="w-4 h-4" />
+                  </div>
+                  <input
+                    type="url"
+                    value={applicantLink}
+                    onChange={(e) => setApplicantLink(e.target.value)}
+                    placeholder="https://linkedin.com/in/username or portfolio link"
+                    className="input-field w-full !pl-10 text-xs py-2.5 bg-white dark:bg-slate-950/80 text-slate-900 dark:text-white border-slate-300 dark:border-slate-800"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Choose File Option for CV / Resume */}
+              <div>
+                <label className="form-label text-xs font-bold text-slate-700 dark:text-slate-300 mb-1 block">
+                  Upload CV / Resume (PDF, DOCX, Image) *
+                </label>
+                
+                {cvFile ? (
+                  <div className="p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-xl flex items-center justify-between">
+                    <div className="flex items-center gap-2.5 overflow-hidden">
+                      <FileCheck className="w-5 h-5 text-emerald-500 shrink-0" />
+                      <div className="overflow-hidden">
+                        <p className="text-xs font-bold text-slate-900 dark:text-white truncate">{cvFile.name}</p>
+                        <p className="text-[10px] text-slate-500">{cvFile.size}</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setCvFile(null)}
+                      className="p-1 text-slate-400 hover:text-rose-500 transition-colors"
+                      title="Remove file"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-emerald-500 dark:hover:border-emerald-400 rounded-xl p-4 text-center cursor-pointer transition-colors relative bg-slate-50 dark:bg-slate-950/60">
+                    <input 
+                      type="file"
+                      accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                      onChange={handleCvChange}
+                      className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                      required
+                    />
+                    <Upload className="w-6 h-6 text-slate-400 mx-auto mb-1" />
+                    <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                      Click or drag file to choose CV
+                    </p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">Supports PDF, DOCX, PNG, JPG (Max 10MB)</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Cover Note (Optional) */}
+              <div>
+                <label className="form-label text-xs font-bold text-slate-700 dark:text-slate-300">Brief Cover Note / Pitch (Optional)</label>
+                <textarea
+                  value={coverNote}
+                  onChange={(e) => setCoverNote(e.target.value)}
+                  placeholder="Introduce yourself or highlight key skills..."
+                  rows={2}
+                  className="input-field w-full text-xs p-2.5 bg-white dark:bg-slate-950/80 text-slate-900 dark:text-white border-slate-300 dark:border-slate-800"
+                />
+              </div>
+
+              {/* Buttons */}
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowApplyModal(false)}
+                  className="btn secondary flex-1 py-2.5 text-xs font-bold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn bg-emerald-600 hover:bg-emerald-700 text-white flex-1 py-2.5 text-xs font-bold shadow-lg shadow-emerald-500/25 keep-white border-0"
+                >
+                  Submit Application
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

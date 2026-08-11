@@ -141,6 +141,8 @@ const Layout = () => {
     }
 
     if (path === '/applications') return { title: 'Application Tracker', icon: <FileText className="w-5 h-5 text-indigo-400" /> };
+    if (path === '/jobs') return { title: 'Jobs Available', icon: <Briefcase className="w-5 h-5 text-indigo-400" /> };
+    if (path === '/mentorship') return { title: 'Apply for Mentorship', icon: <GraduationCap className="w-5 h-5 text-indigo-400" /> };
     return { title: 'Applicant Overview', icon: <LayoutDashboard className="w-5 h-5 text-indigo-400" /> };
   };
 
@@ -211,12 +213,20 @@ const Layout = () => {
                 <span className="flex-1">Overview & Workspace</span>
               </NavLink>
               <NavLink 
-                to="/applicant" 
+                to="/jobs" 
                 onClick={() => setMobileOpen(false)}
                 className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
               >
-                <UserCheck className="w-4 h-4 text-indigo-500" /> 
-                <span className="flex-1">Applicant Panel</span>
+                <Briefcase className="w-4 h-4 text-indigo-500" /> 
+                <span className="flex-1">Jobs Available</span>
+              </NavLink>
+              <NavLink 
+                to="/mentorship" 
+                onClick={() => setMobileOpen(false)}
+                className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+              >
+                <GraduationCap className="w-4 h-4 text-indigo-500" /> 
+                <span className="flex-1">Apply for Mentorship</span>
               </NavLink>
               <NavLink 
                 to="/applications" 

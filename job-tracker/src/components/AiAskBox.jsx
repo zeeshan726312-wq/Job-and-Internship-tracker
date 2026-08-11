@@ -175,7 +175,7 @@ const AiAskBox = () => {
   const courses = context?.courses || [];
   const mentorApps = context?.mentorApps || [];
 
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
     {
       id: 1,
