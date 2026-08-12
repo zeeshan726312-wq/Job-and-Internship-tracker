@@ -187,7 +187,7 @@ const DashboardOverview = () => {
               <Sparkles className="w-3.5 h-3.5 text-amber-300" /> Student Applicant Workspace
             </div>
             <h2 className="text-2xl md:text-3xl font-extrabold text-white keep-white tracking-tight flex items-center gap-2">
-              Welcome back, <span className="text-emerald-200">{currentUser?.name || 'User'}</span>
+              Hi, <span className="text-emerald-200">{currentUser?.username || currentUser?.name || 'User'}</span>
             </h2>
             <p className="text-slate-200 text-sm max-w-xl leading-relaxed font-medium">
               View official platform opportunities posted by Admin, click any listing for full details, apply with 1-click, and monitor your live application status.

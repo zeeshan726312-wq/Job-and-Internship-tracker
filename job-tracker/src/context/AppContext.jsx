@@ -184,65 +184,175 @@ export const AppProvider = ({ children }) => {
         const allCloud = await dbService.fetchAllCollections();
         if (!isMounted) return;
 
-        if (allCloud.jt_users_db && JSON.stringify(allCloud.jt_users_db) !== JSON.stringify(usersDbRef.current)) {
-          let mergedUsers = ensureDefaultUsers(allCloud.jt_users_db);
-          setUsersDb(mergedUsers);
-          usersDbRef.current = mergedUsers;
-          localStorage.setItem('jt_users_db', JSON.stringify(mergedUsers));
+        // 1. Smart Users DB Sync (Cloud is primary authority for user profiles & avatarUrl across devices)
+        if (allCloud.jt_users_db && Array.isArray(allCloud.jt_users_db)) {
+          const currentLocal = usersDbRef.current || [];
+          
+          // Cloud records take priority over local mock defaults
+          let mergedUsers = allCloud.jt_users_db.map(cloudU => {
+            const localU = currentLocal.find(l => l && l.email && l.email.toLowerCase() === (cloudU.email || '').toLowerCase());
+            return {
+              ...localU,
+              ...cloudU,
+              avatarUrl: cloudU.avatarUrl || localU?.avatarUrl || ''
+            };
+          });
 
-          // Sync currentUser's profile (avatar, name, etc.) from the updated db
-          const sessionUser = sessionStorage.getItem('currentUser_session');
-          if (sessionUser) {
+          // Preserve any newly registered local user that hasn't reached cloud yet
+          currentLocal.forEach(localU => {
+            if (localU && localU.email) {
+              const existsInCloud = mergedUsers.some(u => u && u.email && u.email.toLowerCase() === localU.email.toLowerCase());
+              if (!existsInCloud) {
+                mergedUsers.push(localU);
+              }
+            }
+          });
+
+          mergedUsers = ensureDefaultUsers(mergedUsers);
+
+          if (JSON.stringify(mergedUsers) !== JSON.stringify(usersDbRef.current)) {
+            setUsersDb(mergedUsers);
+            usersDbRef.current = mergedUsers;
+            localStorage.setItem('jt_users_db', JSON.stringify(mergedUsers));
+          }
+
+          // Sync active currentUser profile (avatar, name, mobile, etc.)
+          const sessionUserStr = sessionStorage.getItem('currentUser_session');
+          if (sessionUserStr) {
             try {
-              const parsed = JSON.parse(sessionUser);
-              const freshProfile = allCloud.jt_users_db.find(u => u.email === parsed.email);
+              const parsed = JSON.parse(sessionUserStr);
+              const freshProfile = mergedUsers.find(u => u && u.email && u.email.toLowerCase() === (parsed.email || '').toLowerCase());
               if (freshProfile) {
-                const merged = { ...parsed, ...freshProfile };
-                if (JSON.stringify(merged) !== sessionUser) {
-                  setCurrentUser(merged);
-                  sessionStorage.setItem('currentUser_session', JSON.stringify(merged));
+                const mergedCurrent = { ...parsed, ...freshProfile };
+                if (JSON.stringify(mergedCurrent) !== JSON.stringify(parsed)) {
+                  setCurrentUser(mergedCurrent);
+                  sessionStorage.setItem('currentUser_session', JSON.stringify(mergedCurrent));
                   if (localStorage.getItem('jt_remember_me') === 'true') {
-                    localStorage.setItem('currentUser', JSON.stringify(merged));
+                    localStorage.setItem('currentUser', JSON.stringify(mergedCurrent));
                   }
                 }
               }
             } catch { /* ignore JSON parse errors */ }
           }
         }
-        if (allCloud.jt_jobs && JSON.stringify(allCloud.jt_jobs) !== JSON.stringify(jobsRef.current)) {
-          setJobs(allCloud.jt_jobs);
-          jobsRef.current = allCloud.jt_jobs;
-          localStorage.setItem('jt_jobs', JSON.stringify(allCloud.jt_jobs));
+
+        // 2. Smart Jobs Sync
+        if (allCloud.jt_jobs) {
+          const currentLocal = jobsRef.current || [];
+          const mergedJobs = [...allCloud.jt_jobs];
+          currentLocal.forEach(j => {
+            if (!mergedJobs.some(cj => String(cj.id) === String(j.id))) mergedJobs.push(j);
+          });
+          if (JSON.stringify(mergedJobs) !== JSON.stringify(jobsRef.current)) {
+            setJobs(mergedJobs);
+            jobsRef.current = mergedJobs;
+            localStorage.setItem('jt_jobs', JSON.stringify(mergedJobs));
+          }
         }
-        if (allCloud.jt_applications && JSON.stringify(allCloud.jt_applications) !== JSON.stringify(applicationsRef.current)) {
-          setApplications(allCloud.jt_applications);
-          applicationsRef.current = allCloud.jt_applications;
-          localStorage.setItem('jt_applications', JSON.stringify(allCloud.jt_applications));
+
+        // 3. Smart Applications Sync (Preserve local status updates)
+        if (allCloud.jt_applications) {
+          const currentLocal = applicationsRef.current || [];
+          const mergedApps = [...allCloud.jt_applications];
+          currentLocal.forEach(localApp => {
+            const idx = mergedApps.findIndex(a => String(a.id) === String(localApp.id));
+            if (idx === -1) {
+              mergedApps.push(localApp);
+            } else {
+              if (localApp.status && localApp.status !== 'Applied' && mergedApps[idx].status === 'Applied') {
+                mergedApps[idx] = { ...mergedApps[idx], ...localApp };
+              }
+            }
+          });
+          if (JSON.stringify(mergedApps) !== JSON.stringify(applicationsRef.current)) {
+            setApplications(mergedApps);
+            applicationsRef.current = mergedApps;
+            localStorage.setItem('jt_applications', JSON.stringify(mergedApps));
+          }
         }
-        if (allCloud.jt_personal_apps && JSON.stringify(allCloud.jt_personal_apps) !== JSON.stringify(personalAppsRef.current)) {
-          setPersonalApps(allCloud.jt_personal_apps);
-          personalAppsRef.current = allCloud.jt_personal_apps;
-          localStorage.setItem('jt_personal_apps', JSON.stringify(allCloud.jt_personal_apps));
+
+        // 4. Personal Tracker Apps
+        if (allCloud.jt_personal_apps) {
+          const currentLocal = personalAppsRef.current || [];
+          const mergedP = [...allCloud.jt_personal_apps];
+          currentLocal.forEach(p => {
+            if (!mergedP.some(cp => String(cp.id) === String(p.id))) mergedP.push(p);
+          });
+          if (JSON.stringify(mergedP) !== JSON.stringify(personalAppsRef.current)) {
+            setPersonalApps(mergedP);
+            personalAppsRef.current = mergedP;
+            localStorage.setItem('jt_personal_apps', JSON.stringify(mergedP));
+          }
         }
-        if (allCloud.jt_courses && JSON.stringify(allCloud.jt_courses) !== JSON.stringify(coursesRef.current)) {
-          setCourses(allCloud.jt_courses);
-          coursesRef.current = allCloud.jt_courses;
-          localStorage.setItem('jt_courses', JSON.stringify(allCloud.jt_courses));
+
+        // 5. Courses
+        if (allCloud.jt_courses) {
+          const currentLocal = coursesRef.current || [];
+          const mergedC = [...allCloud.jt_courses];
+          currentLocal.forEach(c => {
+            if (!mergedC.some(cc => String(cc.id) === String(c.id))) mergedC.push(c);
+          });
+          if (JSON.stringify(mergedC) !== JSON.stringify(coursesRef.current)) {
+            setCourses(mergedC);
+            coursesRef.current = mergedC;
+            localStorage.setItem('jt_courses', JSON.stringify(mergedC));
+          }
         }
-        if (allCloud.jt_mentorships && JSON.stringify(allCloud.jt_mentorships) !== JSON.stringify(mentorshipsRef.current)) {
-          setMentorships(allCloud.jt_mentorships);
-          mentorshipsRef.current = allCloud.jt_mentorships;
-          localStorage.setItem('jt_mentorships', JSON.stringify(allCloud.jt_mentorships));
+
+        // 6. Mentorships Requests (Preserve local Approved/Rejected status)
+        if (allCloud.jt_mentorships) {
+          const currentLocal = mentorshipsRef.current || [];
+          const mergedM = [...allCloud.jt_mentorships];
+          currentLocal.forEach(localM => {
+            const idx = mergedM.findIndex(m => String(m.id) === String(localM.id));
+            if (idx === -1) {
+              mergedM.push(localM);
+            } else {
+              if (localM.status && localM.status !== 'Pending' && mergedM[idx].status === 'Pending') {
+                mergedM[idx] = { ...mergedM[idx], status: localM.status };
+              }
+            }
+          });
+          if (JSON.stringify(mergedM) !== JSON.stringify(mentorshipsRef.current)) {
+            setMentorships(mergedM);
+            mentorshipsRef.current = mergedM;
+            localStorage.setItem('jt_mentorships', JSON.stringify(mergedM));
+          }
         }
-        if (allCloud.jt_mentor_apps && JSON.stringify(allCloud.jt_mentor_apps) !== JSON.stringify(mentorAppsRef.current)) {
-          setMentorApps(allCloud.jt_mentor_apps);
-          mentorAppsRef.current = allCloud.jt_mentor_apps;
-          localStorage.setItem('jt_mentor_apps', JSON.stringify(allCloud.jt_mentor_apps));
+
+        // 7. Mentor Proposals (Preserve local Approved/Rejected status)
+        if (allCloud.jt_mentor_apps) {
+          const currentLocal = mentorAppsRef.current || [];
+          const mergedMentorApps = [...allCloud.jt_mentor_apps];
+          currentLocal.forEach(localItem => {
+            const idx = mergedMentorApps.findIndex(m => String(m.id) === String(localItem.id));
+            if (idx === -1) {
+              mergedMentorApps.push(localItem);
+            } else {
+              if (localItem.status && localItem.status !== 'Pending' && mergedMentorApps[idx].status === 'Pending') {
+                mergedMentorApps[idx] = { ...mergedMentorApps[idx], status: localItem.status };
+              }
+            }
+          });
+          if (JSON.stringify(mergedMentorApps) !== JSON.stringify(mentorAppsRef.current)) {
+            setMentorApps(mergedMentorApps);
+            mentorAppsRef.current = mergedMentorApps;
+            localStorage.setItem('jt_mentor_apps', JSON.stringify(mergedMentorApps));
+          }
         }
-        if (allCloud.jt_messages && JSON.stringify(allCloud.jt_messages) !== JSON.stringify(messagesRef.current)) {
-          setMessages(allCloud.jt_messages);
-          messagesRef.current = allCloud.jt_messages;
-          localStorage.setItem('jt_messages', JSON.stringify(allCloud.jt_messages));
+
+        // 8. Messages
+        if (allCloud.jt_messages) {
+          const currentLocal = messagesRef.current || [];
+          const mergedMsg = [...allCloud.jt_messages];
+          currentLocal.forEach(msg => {
+            if (!mergedMsg.some(cm => String(cm.id) === String(msg.id))) mergedMsg.push(msg);
+          });
+          if (JSON.stringify(mergedMsg) !== JSON.stringify(messagesRef.current)) {
+            setMessages(mergedMsg);
+            messagesRef.current = mergedMsg;
+            localStorage.setItem('jt_messages', JSON.stringify(mergedMsg));
+          }
         }
       } catch (err) {
         console.warn('[Cloud Sync Error]:', err);

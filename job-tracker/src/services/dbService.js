@@ -19,8 +19,25 @@ export const dbService = {
       if (data === undefined || data === null) return { success: false, error: 'Data is null' };
 
       // 1. Save locally for zero-latency local fallback
-      const jsonStr = JSON.stringify(data);
+      let jsonStr = JSON.stringify(data);
       localStorage.setItem(key, jsonStr);
+
+      // Firestore 1MB document limit guard: sanitize oversized legacy base64 data if payload exceeds 300KB
+      if (jsonStr.length > 300000 && Array.isArray(data)) {
+        console.warn(`[dbService] Payload size for ${key} (${jsonStr.length} bytes) is near Firestore 1MB limit. Sanitizing oversized legacy assets...`);
+        const sanitized = data.map(item => {
+          if (!item) return item;
+          let cleaned = { ...item };
+          if (cleaned.avatarUrl && cleaned.avatarUrl.length > 50000) {
+            cleaned.avatarUrl = ''; // strip legacy uncompressed base64 avatar (>50KB)
+          }
+          if (cleaned.resumeFileData && cleaned.resumeFileData.length > 500000) {
+            cleaned.resumeFileData = '';
+          }
+          return cleaned;
+        });
+        jsonStr = JSON.stringify(sanitized);
+      }
 
       // 2. Sync to Firebase Firestore Cloud API
       const url = `${FIREBASE_REST_BASE}/${key}?key=${API_KEY}`;
@@ -61,9 +78,15 @@ export const dbService = {
       const local = localStorage.getItem(key);
       const localData = local ? JSON.parse(local) : null;
 
-      // Fetch latest live cloud data from Firebase Firestore REST API
+      // Fetch latest live cloud data from Firebase Firestore REST API (no invalid query params)
       const url = `${FIREBASE_REST_BASE}/${key}?key=${API_KEY}`;
-      const response = await fetch(url, { cache: 'no-store' });
+      const response = await fetch(url, { 
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
+        }
+      });
       
       if (response.ok) {
         const cloudResult = await response.json();

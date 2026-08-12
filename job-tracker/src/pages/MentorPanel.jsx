@@ -101,8 +101,8 @@ const MentorPanel = () => {
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 text-white border border-white/20 rounded-full text-xs font-semibold mb-2 backdrop-blur-md float-icon">
               <GraduationCap className="w-3.5 h-3.5 text-indigo-300" /> Career Guidance & Mentorship
             </div>
-            <h2 className="text-2xl md:text-3xl font-extrabold text-white keep-white tracking-tight">
-              Mentorship Command Portal ({mentorName})
+            <h2 className="text-2xl md:text-3xl font-extrabold text-white keep-white tracking-tight flex items-center gap-2">
+              Hi, <span className="text-emerald-200">{currentUser?.username || currentUser?.name || 'User'}</span>
             </h2>
             <p className="text-emerald-100 text-xs mt-1 font-medium">
               Create custom mentorship offerings or apply to mentor platform positions. All mentorship offerings require Admin Approval before publishing to students.
