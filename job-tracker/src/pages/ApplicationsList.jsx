@@ -1,5 +1,6 @@
 import { useContext, useState } from 'react';
 import { AppContext } from '../context/AppContext';
+import { exportToCSV } from '../utils/exportUtils';
 import { 
   FileText, 
   Clock, 
@@ -17,7 +18,8 @@ import {
   X,
   Check,
   FileCheck,
-  Link as LinkIcon
+  Link as LinkIcon,
+  Download
 } from 'lucide-react';
 
 const StatusBadge = ({ status }) => {
@@ -238,6 +240,22 @@ const ApplicationsList = () => {
           </div>
 
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => exportToCSV('My_Application_Pipeline', displayApps.map(a => ({
+                Title: a.jobTitle,
+                Company: a.company,
+                Type: a.type,
+                Status: a.status,
+                AppliedDate: a.appliedDate || '',
+                InterviewSchedule: a.interviewSchedule || '',
+                Notes: a.feedback || ''
+              })))}
+              className="btn bg-white/20 hover:bg-white/30 text-white py-2 px-3 text-xs font-bold shadow-xl flex items-center gap-1.5 backdrop-blur-md border border-white/30 rounded-xl keep-white"
+              title="Export Application History CSV"
+            >
+              <Download className="w-4 h-4 text-emerald-300" /> Export CSV
+            </button>
+
             {/* View Toggle */}
             <div className="flex bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 p-1 rounded-xl">
               <button

@@ -1,6 +1,8 @@
 import { useContext, useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { AppContext } from '../context/AppContext';
+import ResumeBuilderModal from '../components/ResumeBuilderModal';
+import AtsScoreModal from '../components/AtsScoreModal';
 import { 
   Briefcase, 
   Clock, 
@@ -25,7 +27,9 @@ import {
   Mail,
   Phone,
   FileCheck,
-  AlertCircle
+  AlertCircle,
+  Download,
+  Target
 } from 'lucide-react';
 
 const StatusIcon = ({ status }) => {
@@ -61,6 +65,8 @@ const DashboardOverview = () => {
 
   const [applySuccessMsg, setApplySuccessMsg] = useState('');
   const [selectedJobDetail, setSelectedJobDetail] = useState(null);
+  const [showResumeBuilder, setShowResumeBuilder] = useState(false);
+  const [selectedAtsJob, setSelectedAtsJob] = useState(null);
 
   // Application Modal States
   const [showApplyModal, setShowApplyModal] = useState(false);
@@ -195,6 +201,12 @@ const DashboardOverview = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={() => setShowResumeBuilder(true)}
+              className="btn bg-white/20 hover:bg-white/30 text-white py-3 px-4 font-bold text-xs shadow-xl flex items-center gap-2 backdrop-blur-md border border-white/30 rounded-xl keep-white"
+            >
+              <Download className="w-4 h-4 text-emerald-300" /> Build PDF Resume
+            </button>
             <Link
               to="/applications"
               className="btn bg-emerald-600 hover:bg-emerald-500 text-white py-3 px-5 font-extrabold text-sm shadow-xl hover:scale-[1.02] transition-all flex items-center gap-2 border-0 rounded-xl keep-white"
@@ -325,8 +337,16 @@ const DashboardOverview = () => {
 
                         <div className="flex items-center gap-2 shrink-0">
                           <button
+                            onClick={() => setSelectedAtsJob(job)}
+                            className="h-10 px-3 shrink-0 text-xs font-bold rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 dark:text-purple-400 border border-purple-500/30 transition-all duration-200 flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+                            title="Check AI ATS Match Score"
+                          >
+                            <Target className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline">ATS Score</span>
+                          </button>
+                          <button
                             onClick={() => setSelectedJobDetail(job)}
-                            className="h-10 w-32 shrink-0 text-xs font-bold rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700/80 transition-all duration-200 flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+                            className="h-10 w-24 shrink-0 text-xs font-bold rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700/80 transition-all duration-200 flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
                             title="View Full Details"
                           >
                             Details
@@ -870,6 +890,23 @@ const DashboardOverview = () => {
             </form>
           </div>
         </div>
+      )}
+
+      {/* RESUME BUILDER MODAL */}
+      {showResumeBuilder && (
+        <ResumeBuilderModal
+          currentUser={currentUser}
+          onClose={() => setShowResumeBuilder(false)}
+        />
+      )}
+
+      {/* AI ATS MATCH SCORE MODAL */}
+      {selectedAtsJob && (
+        <AtsScoreModal
+          job={selectedAtsJob}
+          currentUser={currentUser}
+          onClose={() => setSelectedAtsJob(null)}
+        />
       )}
     </div>
   );

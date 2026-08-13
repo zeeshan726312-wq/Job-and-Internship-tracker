@@ -21,16 +21,22 @@ import {
   Mail,
   KeyRound,
   AlertCircle,
-  UserCheck
+  UserCheck,
+  Bell
 } from 'lucide-react';
 import { AppContext } from '../context/AppContext';
+import { notificationService } from '../services/notificationService';
 import '../index.css';
 
 const Layout = () => {
-  const { currentUser, logout, theme, toggleTheme, updateUserProfile, usersDb = [] } = useContext(AppContext);
+  const { 
+    currentUser, logout, theme, toggleTheme, updateUserProfile, usersDb = [],
+    notifications = [], markNotificationRead = () => {}, clearNotifications = () => {}
+  } = useContext(AppContext);
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [showNotifDrawer, setShowNotifDrawer] = useState(false);
 
   // Edit Profile Modal State
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
@@ -408,6 +414,64 @@ const Layout = () => {
                 </p>
                 <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium capitalize mt-0.5">{getRoleTitle(currentUser?.role)}</p>
               </div>
+            </div>
+
+            {/* Animated Notification Bell Button */}
+            <div className="relative">
+              <button
+                onClick={() => {
+                  setShowNotifDrawer(prev => !prev);
+                  notificationService.requestPermission();
+                }}
+                className="p-2 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 transition-all cursor-pointer relative"
+                title="Notifications"
+              >
+                <Bell className="w-4 h-4 text-emerald-500" />
+                {notifications.filter(n => !n.read).length > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-white font-extrabold text-[9px] rounded-full flex items-center justify-center animate-pulse">
+                    {notifications.filter(n => !n.read).length}
+                  </span>
+                )}
+              </button>
+
+              {/* Notification Dropdown Drawer */}
+              {showNotifDrawer && (
+                <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-4 z-50 space-y-3 animate-in fade-in zoom-in-95 duration-200">
+                  <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
+                    <h4 className="font-extrabold text-xs text-slate-900 dark:text-white flex items-center gap-1.5">
+                      <Bell className="w-3.5 h-3.5 text-emerald-500" /> Notifications ({notifications.length})
+                    </h4>
+                    <div className="flex items-center gap-2">
+                      <button onClick={clearNotifications} className="text-[10px] text-rose-500 hover:underline font-bold">Clear All</button>
+                      <button onClick={() => setShowNotifDrawer(false)} className="text-slate-400 hover:text-white text-xs">✕</button>
+                    </div>
+                  </div>
+
+                  <div className="max-h-60 overflow-y-auto space-y-2 text-xs">
+                    {notifications.length === 0 ? (
+                      <p className="text-slate-400 text-center py-4 text-[11px]">No notifications yet.</p>
+                    ) : (
+                      notifications.map(n => (
+                        <div
+                          key={n.id}
+                          onClick={() => markNotificationRead(n.id)}
+                          className={`p-2.5 rounded-xl border transition-colors cursor-pointer ${
+                            n.read
+                              ? 'bg-slate-50 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800/60 text-slate-500'
+                              : 'bg-emerald-500/10 border-emerald-500/30 text-slate-900 dark:text-white font-bold'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">{n.title}</span>
+                            <span className="text-[9px] text-slate-400">{n.time}</span>
+                          </div>
+                          <p className="text-[11px] mt-0.5 text-slate-600 dark:text-slate-300 font-normal">{n.text}</p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Light / Dark Mode Toggle Button */}

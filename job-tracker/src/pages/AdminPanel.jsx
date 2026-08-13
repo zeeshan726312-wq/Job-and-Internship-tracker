@@ -1,5 +1,6 @@
 import { useContext, useState } from 'react';
 import { AppContext } from '../context/AppContext';
+import { exportToCSV, printSummaryReport } from '../utils/exportUtils';
 import { 
   Trash2, 
   ShieldCheck, 
@@ -16,26 +17,35 @@ import {
   UserCheck,
   ExternalLink,
   Link as LinkIcon,
-  FileCheck
+  FileCheck,
+  Download,
+  Printer
 } from 'lucide-react';
 
 const AdminPanel = () => {
+  const context = useContext(AppContext) || {};
   const { 
-    jobs, 
-    addJob,
-    applications,
-    updateApplicationStatus, 
-    deleteApplication, 
-    deleteJob,
-    usersDb, 
-    deleteUser, 
-    updateUserRole,
-    signup,
-    mentorApps,
-    approveMentorApp,
-    rejectMentorApp
-  } = useContext(AppContext);
-  
+    currentUser = null,
+    jobs = [], 
+    addJob = () => {},
+    applications = [],
+    updateApplicationStatus = () => {}, 
+    deleteApplication = () => {}, 
+    deleteJob = () => {},
+    usersDb = [], 
+    deleteUser = () => {}, 
+    updateUserRole = () => {},
+    signup = () => {},
+    mentorApps = [],
+    approveMentorApp = () => {},
+    rejectMentorApp = () => {}
+  } = context;
+
+  const safeUsersDb = Array.isArray(usersDb) ? usersDb.filter(Boolean) : [];
+  const safeApplications = Array.isArray(applications) ? applications.filter(Boolean) : [];
+  const safeJobs = Array.isArray(jobs) ? jobs.filter(Boolean) : [];
+  const safeMentorApps = Array.isArray(mentorApps) ? mentorApps.filter(Boolean) : [];
+
   const [activeTab, setActiveTab] = useState('overview'); // overview, users, jobs, applications, hired, mentor_approval
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [showAddJobModal, setShowAddJobModal] = useState(false);
@@ -67,9 +77,6 @@ const AdminPanel = () => {
     idCard: '12345-1234567-1'
   });
 
-  // Change Admin Email/Password State
-
-
   // Admin Public Job Form State with All Compulsory Details
   const [adminJob, setAdminJob] = useState({
     title: '',
@@ -87,12 +94,12 @@ const AdminPanel = () => {
   const [formError, setFormError] = useState('');
   const [formSuccess, setFormSuccess] = useState('');
 
-  const applicants = usersDb.filter(u => u.role === 'user');
-  const employers = usersDb.filter(u => u.role === 'employer');
-  const admins = usersDb.filter(u => u.role === 'admin');
+  const applicants = safeUsersDb.filter(u => u && u.role === 'user');
+  const employers = safeUsersDb.filter(u => u && u.role === 'employer');
+  const admins = safeUsersDb.filter(u => u && u.role === 'admin');
 
-  const hiredCount = applications.filter(a => a.status === 'Hired' || a.status === 'Offered').length;
-  const interviewCount = applications.filter(a => a.status === 'Interview').length;
+  const hiredCount = safeApplications.filter(a => a && (a.status === 'Hired' || a.status === 'Offered')).length;
+  const interviewCount = safeApplications.filter(a => a && a.status === 'Interview').length;
 
   const openAddAdminModal = () => {
     setNewUser({
@@ -216,11 +223,11 @@ const AdminPanel = () => {
     }, 1500);
   };
 
-  const filteredUsers = usersDb.filter(u => 
-    u.name?.toLowerCase().includes(userSearch.toLowerCase()) ||
-    u.email?.toLowerCase().includes(userSearch.toLowerCase()) ||
-    u.role?.toLowerCase().includes(userSearch.toLowerCase())
-  );
+  const filteredUsers = safeUsersDb.filter(u => u && (
+    (u.name && u.name.toLowerCase().includes(userSearch.toLowerCase())) ||
+    (u.email && u.email.toLowerCase().includes(userSearch.toLowerCase())) ||
+    (u.role && u.role.toLowerCase().includes(userSearch.toLowerCase()))
+  ));
 
   const openAddStandardJobModal = () => {
     setFormError('');
@@ -280,31 +287,55 @@ const AdminPanel = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
-            {/* DEDICATED POST STANDARD JOB BUTTON */}
+            <button
+              onClick={() => exportToCSV('System_Users_Database', safeUsersDb.map(u => ({
+                Name: u?.name || '',
+                Email: u?.email || '',
+                Role: u?.role || '',
+                Mobile: u?.mobile || '',
+                CNIC: u?.idCard || ''
+              })))}
+              className="btn bg-emerald-500/20 hover:bg-emerald-500/30 text-white border border-emerald-400/40 backdrop-blur-md py-2.5 px-4 rounded-xl text-xs font-extrabold shadow-lg shadow-emerald-900/30 flex items-center gap-2 transition-all hover:scale-[1.03] keep-white cursor-pointer"
+              title="Export Complete Users CSV Database"
+            >
+              <Download className="w-4 h-4 text-emerald-300" /> Export CSV
+            </button>
+
+            <button
+              onClick={() => printSummaryReport('System Executive Summary Report', safeUsersDb, [
+                { header: 'User Name', accessor: u => u?.name || '' },
+                { header: 'Email Address', accessor: u => u?.email || '' },
+                { header: 'Role', accessor: u => u?.role || '' },
+                { header: 'Mobile', accessor: u => u?.mobile || '-' }
+              ])}
+              className="btn bg-emerald-500/20 hover:bg-emerald-500/30 text-white border border-emerald-400/40 backdrop-blur-md py-2.5 px-4 rounded-xl text-xs font-extrabold shadow-lg shadow-emerald-900/30 flex items-center gap-2 transition-all hover:scale-[1.03] keep-white cursor-pointer"
+              title="Print System Summary PDF Report"
+            >
+              <Printer className="w-4 h-4 text-emerald-300" /> Print PDF Report
+            </button>
+
             <button
               onClick={openAddStandardJobModal}
-              className="btn bg-white text-emerald-900 hover:bg-slate-100 py-2.5 px-4 text-xs font-extrabold shadow-xl flex items-center gap-1.5 border-0 transition-transform hover:scale-105"
+              className="btn bg-emerald-500/30 hover:bg-emerald-500/45 text-white border border-emerald-300/50 backdrop-blur-md py-2.5 px-4 rounded-xl text-xs font-extrabold shadow-xl shadow-emerald-900/40 flex items-center gap-2 transition-all hover:scale-[1.03] keep-white cursor-pointer pulse-glow"
               title="Post New Standard Opportunity for All Users"
             >
-              <PlusCircle className="w-4 h-4 text-emerald-700" /> + Post Job
+              <PlusCircle className="w-4 h-4 text-emerald-300" /> + Post Job
             </button>
 
-            {/* DEDICATED POST EXTERNAL LINK JOB BUTTON */}
             <button
               onClick={openAddExternalJobModal}
-              className="btn bg-sky-500 hover:bg-sky-400 text-white py-2.5 px-4 text-xs font-extrabold shadow-xl flex items-center gap-1.5 border-0 keep-white shimmer-effect transition-transform hover:scale-105"
+              className="btn bg-emerald-500/30 hover:bg-emerald-500/45 text-white border border-emerald-300/50 backdrop-blur-md py-2.5 px-4 rounded-xl text-xs font-extrabold shadow-xl shadow-emerald-900/40 flex items-center gap-2 transition-all hover:scale-[1.03] keep-white cursor-pointer pulse-glow"
               title="Post External Link Job Direct Page"
             >
-              <ExternalLink className="w-4 h-4 text-white" /> + Post External Job Link
+              <ExternalLink className="w-4 h-4 text-emerald-300" /> + Post External Job
             </button>
 
-            {/* DEDICATED ADD ADMIN ONLY BUTTON */}
             <button
               onClick={openAddAdminModal}
-              className="btn bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-950/50 dark:hover:bg-emerald-950/70 text-white keep-white border border-emerald-600 dark:border-white/30 py-2.5 px-4 text-xs font-bold flex items-center gap-2 backdrop-blur-md cursor-pointer shadow-md"
+              className="btn bg-emerald-500/30 hover:bg-emerald-500/45 text-white border border-emerald-300/50 backdrop-blur-md py-2.5 px-4 rounded-xl text-xs font-extrabold shadow-xl shadow-emerald-900/40 flex items-center gap-2 transition-all hover:scale-[1.03] keep-white cursor-pointer pulse-glow"
               title="Add New Administrator Account"
             >
-              <ShieldCheck className="w-4 h-4 text-emerald-200 dark:text-emerald-300" /> + Add Admin
+              <ShieldCheck className="w-4 h-4 text-emerald-300" /> + Add Admin
             </button>
           </div>
         </div>
@@ -326,7 +357,7 @@ const AdminPanel = () => {
             activeTab === 'users' ? 'bg-emerald-600 text-white shadow-md keep-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
           }`}
         >
-          User Accounts ({usersDb.length})
+          User Accounts ({safeUsersDb.length})
         </button>
         <button
           onClick={() => setActiveTab('jobs')}
@@ -334,7 +365,7 @@ const AdminPanel = () => {
             activeTab === 'jobs' ? 'bg-emerald-600 text-white shadow-md keep-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
           }`}
         >
-          Jobs Directory ({jobs.length})
+          Jobs Directory ({safeJobs.length})
         </button>
         <button
           onClick={() => setActiveTab('applications')}
@@ -342,7 +373,7 @@ const AdminPanel = () => {
             activeTab === 'applications' ? 'bg-emerald-600 text-white shadow-md keep-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
           }`}
         >
-          All Applications ({applications.length})
+          All Applications ({safeApplications.length})
         </button>
         <button
           onClick={() => setActiveTab('hired')}
@@ -358,10 +389,10 @@ const AdminPanel = () => {
             activeTab === 'mentor_approval' ? 'bg-emerald-600 text-white shadow-md keep-white' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
           }`}
         >
-          Mentorship ({mentorApps.length})
-          {mentorApps.filter(m => m.status === 'Pending').length > 0 && (
+          Mentorship ({safeMentorApps.length})
+          {safeMentorApps.filter(m => m && m.status === 'Pending').length > 0 && (
             <span className="ml-1.5 px-1.5 py-0.5 text-[10px] bg-amber-500 text-black font-extrabold rounded-full animate-pulse">
-              {mentorApps.filter(m => m.status === 'Pending').length} Pending
+              {safeMentorApps.filter(m => m && m.status === 'Pending').length} Pending
             </span>
           )}
         </button>
@@ -382,7 +413,7 @@ const AdminPanel = () => {
                 <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Total System Users</h4>
                 <Users className="w-5 h-5 text-indigo-500 opacity-90" />
               </div>
-              <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white mt-1">{usersDb.length}</h2>
+              <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white mt-1">{safeUsersDb.length}</h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">{applicants.length} Applicants • {employers.length} Recruiters • {admins.length} Admins</p>
             </div>
 
@@ -391,7 +422,7 @@ const AdminPanel = () => {
                 <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Active Jobs</h4>
                 <Briefcase className="w-5 h-5 text-amber-500 opacity-90" />
               </div>
-              <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white mt-1">{jobs.length}</h2>
+              <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white mt-1">{safeJobs.length}</h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">Listings Published</p>
             </div>
 
@@ -400,7 +431,7 @@ const AdminPanel = () => {
                 <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Submissions</h4>
                 <FileText className="w-5 h-5 text-purple-500 opacity-90" />
               </div>
-              <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white mt-1">{applications.length}</h2>
+              <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white mt-1">{safeApplications.length}</h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">{interviewCount} Interview Scheduled</p>
             </div>
 
@@ -409,17 +440,17 @@ const AdminPanel = () => {
                 <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Mentorship Proposals</h4>
                 <GraduationCap className="w-5 h-5 text-emerald-500 opacity-90" />
               </div>
-              <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white mt-1">{mentorApps.length}</h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">{mentorApps.filter(m => m.status === 'Pending').length} Pending Approval</p>
+              <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white mt-1">{safeMentorApps.length}</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium">{safeMentorApps.filter(m => m && m.status === 'Pending').length} Pending Approval</p>
             </div>
           </div>
 
           {/* PENDING MENTORSHIP APPROVALS SECTION ON OVERVIEW */}
-          {mentorApps.filter(m => m.status === 'Pending').length > 0 && (
+          {safeMentorApps.filter(m => m && m.status === 'Pending').length > 0 && (
             <div className="card bg-amber-500/5 dark:bg-amber-950/20 border border-amber-500/30 rounded-2xl p-6 space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-                  <GraduationCap className="w-5 h-5 text-amber-500" /> Pending Mentorship Approvals Required ({mentorApps.filter(m => m.status === 'Pending').length})
+                  <GraduationCap className="w-5 h-5 text-amber-500" /> Pending Mentorship Approvals Required ({safeMentorApps.filter(m => m && m.status === 'Pending').length})
                 </h3>
                 <span className="text-xs bg-amber-500/20 text-amber-700 dark:text-amber-300 font-bold px-3 py-1 rounded-full border border-amber-500/30">
                   Action Required
@@ -430,7 +461,7 @@ const AdminPanel = () => {
               </p>
 
               <div className="space-y-3">
-                {mentorApps.filter(m => m.status === 'Pending').map(m => (
+                {safeMentorApps.filter(m => m && m.status === 'Pending').map(m => (
                   <div key={`overview-${m.id}`} className="p-4 bg-white dark:bg-slate-900 border border-amber-500/30 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
@@ -478,7 +509,7 @@ const AdminPanel = () => {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <Users className="w-5 h-5 text-emerald-500" /> Platform User Database ({usersDb.length})
+                <Users className="w-5 h-5 text-emerald-500" /> Platform User Database ({safeUsersDb.length})
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Manage permissions, role assignments, or delete accounts.</p>
             </div>
@@ -574,7 +605,7 @@ const AdminPanel = () => {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <Briefcase className="w-5 h-5 text-emerald-500" /> Platform Listings Directory ({jobs.length})
+                <Briefcase className="w-5 h-5 text-emerald-500" /> Platform Listings Directory ({safeJobs.length})
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">All jobs posted by Admin and Employers automatically sync across all user panels.</p>
             </div>
@@ -596,10 +627,10 @@ const AdminPanel = () => {
           </div>
 
           <div className="space-y-3">
-            {jobs.length === 0 ? (
+            {safeJobs.length === 0 ? (
               <p className="text-slate-500 dark:text-slate-400 text-xs py-6 text-center font-medium">No job listings found on the platform.</p>
             ) : (
-              jobs.map(job => (
+              safeJobs.map(job => (
                 <div key={job.id} className="p-4 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center justify-between gap-4">
                   <div>
                     <h4 className="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
@@ -653,7 +684,7 @@ const AdminPanel = () => {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <FileText className="w-5 h-5 text-emerald-500" /> System Candidate Submissions ({applications.length})
+                <FileText className="w-5 h-5 text-emerald-500" /> System Candidate Submissions ({safeApplications.length})
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 View candidate application submissions and update hiring statuses across all platform listings.
@@ -662,11 +693,11 @@ const AdminPanel = () => {
           </div>
 
           <div className="space-y-3">
-            {applications.length === 0 ? (
+            {safeApplications.length === 0 ? (
               <p className="text-slate-500 dark:text-slate-400 text-xs py-6 text-center font-medium">No application records found.</p>
             ) : (
-              applications.map(app => {
-                const job = jobs.find(j => j.id === app.jobId);
+              safeApplications.map(app => {
+                const job = safeJobs.find(j => j && j.id === app.jobId);
                 return (
                   <div key={app.id} className="p-4 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
@@ -763,11 +794,11 @@ const AdminPanel = () => {
             <CheckCircle2 className="w-5 h-5 text-emerald-500" /> Successful Placements & Hired Candidates ({hiredCount})
           </h3>
           <div className="space-y-3">
-            {applications.filter(a => a.status === 'Hired' || a.status === 'Shortlisted' || a.status === 'Offered').length === 0 ? (
+            {safeApplications.filter(a => a && (a.status === 'Hired' || a.status === 'Shortlisted' || a.status === 'Offered')).length === 0 ? (
               <p className="text-slate-500 dark:text-slate-400 text-xs py-4 text-center">No hired or shortlisted candidates recorded yet.</p>
             ) : (
-              applications.filter(a => a.status === 'Hired' || a.status === 'Shortlisted' || a.status === 'Offered').map(app => {
-                const job = jobs.find(j => j.id === app.jobId);
+              safeApplications.filter(a => a && (a.status === 'Hired' || a.status === 'Shortlisted' || a.status === 'Offered')).map(app => {
+                const job = safeJobs.find(j => j && j.id === app.jobId);
                 return (
                   <div key={app.id} className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
@@ -808,17 +839,17 @@ const AdminPanel = () => {
       {activeTab === 'mentor_approval' && (
         <div className="card bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-4">
           <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <GraduationCap className="w-5 h-5 text-emerald-500" /> Mentor Applications for Internships & Jobs ({mentorApps.length})
+            <GraduationCap className="w-5 h-5 text-emerald-500" /> Mentor Applications for Internships & Jobs ({safeMentorApps.length})
           </h3>
           <p className="text-xs text-slate-500 dark:text-slate-400">
             Review mentors who applied to offer mentorship for internships. Once approved, mentorship will show on the applicant dashboard!
           </p>
 
           <div className="space-y-3">
-            {mentorApps.length === 0 ? (
+            {safeMentorApps.length === 0 ? (
               <p className="text-slate-500 dark:text-slate-400 text-xs py-4 text-center">No mentor applications pending.</p>
             ) : (
-              mentorApps.map(m => (
+              safeMentorApps.map(m => (
                 <div key={m.id} className="p-4 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">

@@ -1,5 +1,7 @@
 import { useContext, useState } from 'react';
 import { AppContext } from '../context/AppContext';
+import ChatAndMeetingModal from '../components/ChatAndMeetingModal';
+import { exportToCSV } from '../utils/exportUtils';
 import { 
   MessageSquare, 
   Briefcase, 
@@ -16,7 +18,8 @@ import {
   ShieldCheck,
   Link as LinkIcon,
   FileCheck,
-  FileText
+  FileText,
+  Download
 } from 'lucide-react';
 
 const EmployerPanel = () => {
@@ -39,6 +42,7 @@ const EmployerPanel = () => {
 
   const [trainingOffers, setTrainingOffers] = useState({});
   const [offerSuccessMsg, setOfferSuccessMsg] = useState('');
+  const [selectedChatApp, setSelectedChatApp] = useState(null);
 
   // State for Interview/Feedback Modal
   const [editingApp, setEditingApp] = useState(null);
@@ -272,9 +276,25 @@ const EmployerPanel = () => {
 
       {/* Candidate Applicants Table */}
       <div className="card bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 space-y-4">
-        <h3 className="flex items-center gap-2 text-slate-900 dark:text-white font-bold text-base">
-          <Users className="w-5 h-5 text-emerald-500" /> Candidate Submissions & Review Queue ({relevantApplications.length})
-        </h3>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <h3 className="flex items-center gap-2 text-slate-900 dark:text-white font-bold text-base">
+            <Users className="w-5 h-5 text-emerald-500" /> Candidate Submissions & Review Queue ({relevantApplications.length})
+          </h3>
+
+          <button
+            onClick={() => exportToCSV('Candidate_Applications_Report', relevantApplications.map(a => ({
+              ID: a.id,
+              Applicant: a.applicantName,
+              Email: a.applicantEmail || '',
+              Status: a.status || 'Applied',
+              Interview: a.interviewSchedule || '',
+              Notes: a.feedback || ''
+            })))}
+            className="btn secondary py-1.5 px-3 text-xs font-bold flex items-center gap-1.5 self-start sm:self-auto"
+          >
+            <Download className="w-3.5 h-3.5 text-emerald-500" /> Export CSV Report
+          </button>
+        </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
@@ -354,12 +374,21 @@ const EmployerPanel = () => {
                         {app.interviewSchedule ? `🗓️ ${app.interviewSchedule}` : 'No date set'}
                       </td>
                       <td className="p-3 text-right">
-                        <button
-                          onClick={() => openEditor(app)}
-                          className="btn secondary py-1.5 px-3 text-[11px] font-semibold flex items-center gap-1 ml-auto"
-                        >
-                          <MessageSquare className="w-3.5 h-3.5 text-emerald-500" /> Update Details
-                        </button>
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => setSelectedChatApp(app)}
+                            className="btn bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/30 hover:bg-purple-500/20 py-1.5 px-2.5 text-[11px] font-semibold flex items-center gap-1"
+                            title="1-on-1 Chat & WebRTC Video Meeting"
+                          >
+                            <Video className="w-3.5 h-3.5" /> Meeting & Chat
+                          </button>
+                          <button
+                            onClick={() => openEditor(app)}
+                            className="btn secondary py-1.5 px-2.5 text-[11px] font-semibold flex items-center gap-1"
+                          >
+                            <MessageSquare className="w-3.5 h-3.5 text-emerald-500" /> Details
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -599,6 +628,16 @@ const EmployerPanel = () => {
             </form>
           </div>
         </div>
+      )}
+
+      {/* DIRECT CHAT & WEBRTC MEETING MODAL */}
+      {selectedChatApp && (
+        <ChatAndMeetingModal
+          candidateName={selectedChatApp.applicantName}
+          candidateEmail={selectedChatApp.applicantEmail}
+          currentUser={currentUser}
+          onClose={() => setSelectedChatApp(null)}
+        />
       )}
     </div>
   );

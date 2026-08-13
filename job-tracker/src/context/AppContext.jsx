@@ -762,6 +762,46 @@ export const AppProvider = ({ children }) => {
     updateCollection('jt_messages', updated, setMessages, messagesRef);
   };
 
+  // Notifications State & Triggers
+  const [notifications, setNotifications] = useState(() => getStoredItem('jt_notifications', [
+    { id: 1, title: 'Welcome to TrackerPro 2.0', text: 'Realtime cloud sync and notification hub active.', read: false, time: 'Just now' }
+  ]) || []);
+
+  const addNotification = (title, text, type = 'info') => {
+    const newNotif = {
+      id: Date.now(),
+      title,
+      text,
+      type,
+      read: false,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+    setNotifications(prev => {
+      const updated = [newNotif, ...prev];
+      try { localStorage.setItem('jt_notifications', JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+
+    try {
+      if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+        new Notification(title, { body: text });
+      }
+    } catch { /* silent */ }
+  };
+
+  const markNotificationRead = (id) => {
+    setNotifications(prev => {
+      const updated = prev.map(n => n.id === id ? { ...n, read: true } : n);
+      try { localStorage.setItem('jt_notifications', JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+  };
+
+  const clearNotifications = () => {
+    setNotifications([]);
+    try { localStorage.setItem('jt_notifications', JSON.stringify([])); } catch {}
+  };
+
   return (
     <AppContext.Provider value={{
       theme, toggleTheme,
@@ -772,7 +812,8 @@ export const AppProvider = ({ children }) => {
       courses, addCourse,
       mentorships, requestMentorship, updateMentorshipStatus, deleteMentorship,
       mentorApps, applyToMentorJob, postMentorshipProgram, approveMentorApp, rejectMentorApp, requestMentorshipProgram,
-      messages, sendMessage, markMessageRead, deleteMessage
+      messages, sendMessage, markMessageRead, deleteMessage,
+      notifications, addNotification, markNotificationRead, clearNotifications
     }}>
       {children}
     </AppContext.Provider>
