@@ -10,6 +10,22 @@ A comprehensive, full-stack client-side career command center built with **React
 
 ---
 
+## 📸 GUI Screenshots & Application Previews
+
+| Auth & AI Assistant | System Admin Panel |
+| :---: | :---: |
+| ![Auth Page](./GUI%20ScreenShots/Screenshot%202026-08-13%20134241.png) | ![Admin Panel](./GUI%20ScreenShots/Screenshot%202026-08-13%20134331.png) |
+
+| Applicant Workspace | Employer & Recruiter Console |
+| :---: | :---: |
+| ![Applicant Workspace](./GUI%20ScreenShots/Screenshot%202026-08-13%20134404.png) | ![Employer Console](./GUI%20ScreenShots/Screenshot%202026-08-13%20134800.png) |
+
+| Mentorship Portal |
+| :---: |
+| ![Mentorship Portal](./GUI%20ScreenShots/Screenshot%202026-08-13%20134850.png) |
+
+---
+
 ## 📅 Weekly Development Progress Log (What Was Done)
 
 ### 🗓️ Week 1: Core Foundation & UI Architecture
