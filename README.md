@@ -74,10 +74,10 @@ A comprehensive, full-stack client-side career command center built with **React
 
 | Role | Gmail Address | Password |
 | :--- | :--- | :--- |
-| **Applicant (User)** | `user@gmail.com` | `user123` |
-| **Employer** | `employer@gmail.com` | `emp123` |
-| **Mentor** | `mentor@gmail.com` | `men123` |
-| **System Admin** | `admin@gmail.com` | `admin123` |
+| **Applicant (User)** | `user1@gmail.com` | `user1` |
+| **Employer** | `employer1@gmail.com` | `employer1` |
+| **Mentor** | `mentor1@gmail.com` | `mentor1` |
+| **System Admin** | `admin1@gmail.com` | `admin1` |
 
 ---
 
