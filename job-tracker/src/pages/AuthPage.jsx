@@ -26,7 +26,9 @@ import {
   ArrowRight,
   Star,
   Sun,
-  Moon
+  Moon,
+  Zap,
+  ChevronDown
 } from 'lucide-react';
 
 const AuthPage = () => {
@@ -58,7 +60,62 @@ const AuthPage = () => {
   const [oauthProvider, setOauthProvider] = useState('google'); // 'google' | 'edge'
   const [oauthEmail, setOauthEmail] = useState('');
 
+  // Passwordless Test Demo Panel Selection State
+  const [showDemoPanelSelect, setShowDemoPanelSelect] = useState(false);
+
   const navigate = useNavigate();
+
+  const handleDemoLogin = (targetRole) => {
+    setError('');
+    setSuccessMessage('');
+
+    const safeUsersDb = Array.isArray(usersDb) ? usersDb : [];
+    let demoAccount = safeUsersDb.find(u => u && u.role === targetRole);
+
+    if (!demoAccount) {
+      const demoEmailMap = {
+        user: 'user@gmail.com',
+        employer: 'employer@gmail.com',
+        mentor: 'mentor@gmail.com',
+        admin: 'admin@gmail.com'
+      };
+      const targetEmail = demoEmailMap[targetRole] || 'user@gmail.com';
+      demoAccount = safeUsersDb.find(u => u && u.email && u.email.toLowerCase() === targetEmail);
+    }
+
+    if (demoAccount) {
+      const res = login(demoAccount.email, demoAccount.password, targetRole, true);
+      if (res.success) {
+        if (targetRole === 'admin') navigate('/admin');
+        else if (targetRole === 'employer') navigate('/employer');
+        else if (targetRole === 'mentor') navigate('/mentor');
+        else navigate('/user');
+      } else {
+        setError('Unable to log into demo account. Please try manual login.');
+      }
+    } else {
+      const defaultPasswords = { user: 'user123', employer: 'emp123', mentor: 'men123', admin: 'admin123' };
+      const defaultEmails = { user: 'user@gmail.com', employer: 'employer@gmail.com', mentor: 'mentor@gmail.com', admin: 'admin@gmail.com' };
+      const defaultNames = { user: 'User Demo', employer: 'Employer Demo', mentor: 'Mentor Demo', admin: 'Admin Demo' };
+
+      const newDemoUser = {
+        email: defaultEmails[targetRole] || 'user@gmail.com',
+        password: defaultPasswords[targetRole] || 'user123',
+        role: targetRole,
+        name: defaultNames[targetRole] || 'Demo Account',
+        mobile: '+923000000000',
+        idCard: '12345-0000000-1'
+      };
+      signup(newDemoUser);
+      const res = login(newDemoUser.email, newDemoUser.password, targetRole, true);
+      if (res.success) {
+        if (targetRole === 'admin') navigate('/admin');
+        else if (targetRole === 'employer') navigate('/employer');
+        else if (targetRole === 'mentor') navigate('/mentor');
+        else navigate('/user');
+      }
+    }
+  };
 
   const openGoogleAuth = () => {
     setOauthProvider('google');
@@ -533,7 +590,7 @@ const AuthPage = () => {
           </p>
 
           {/* Action Button Link in Eye-Catching Distinct Color */}
-          <div className="pt-2 flex flex-wrap items-center gap-4">
+          <div className="pt-2 flex flex-wrap items-center gap-3">
             <a 
               href="#auth-card" 
               onClick={(e) => {
@@ -547,16 +604,27 @@ const AuthPage = () => {
                   document.getElementById('signin-email')?.focus();
                 }, 250);
               }}
-              className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 text-slate-950 font-black text-sm shadow-xl shadow-cyan-500/25 hover:shadow-cyan-500/40 hover:scale-105 transition-all duration-300 border border-cyan-200/50 group cursor-pointer"
+              className="inline-flex items-center gap-2.5 px-5 py-3 rounded-2xl bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 text-slate-950 font-black text-sm shadow-xl shadow-cyan-500/25 hover:shadow-cyan-500/40 hover:scale-105 transition-all duration-300 border border-cyan-200/50 group cursor-pointer"
             >
               <span>Step Into Your Future</span>
               <ArrowRight className="w-4 h-4 text-slate-950 group-hover:translate-x-1 transition-transform" />
             </a>
 
-            <div className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-slate-900/80 border border-slate-800 text-xs text-slate-300 font-semibold backdrop-blur-md">
-              <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-              <span>Unified Career Ecosystem</span>
-            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setIsForgotPassword(false);
+                setIsLogin(true);
+                setShowDemoPanelSelect(true);
+                setError('');
+                setSuccessMessage('');
+                document.getElementById('auth-card')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 text-slate-950 font-extrabold text-xs shadow-xl glowing-demo-btn hover:scale-105 transition-all cursor-pointer border border-amber-200"
+            >
+              <Zap className="w-4 h-4 fill-slate-950 text-slate-950" />
+              <span>Test Demo Without Account</span>
+            </button>
           </div>
 
           {/* Role Badges Grid */}
@@ -630,6 +698,122 @@ const AuthPage = () => {
                 <UserPlus className="w-4 h-4" /> Register
               </button>
             </div>
+
+            {/* PROMINENT GLOWING TEST DEMO WITHOUT ACCOUNT SECTION */}
+            {isLogin && (
+              <div className="my-3 relative group">
+                {/* Outer Glow Aura */}
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-500 via-purple-600 to-cyan-400 rounded-2xl blur-md opacity-80 group-hover:opacity-100 transition duration-500 animate-pulse pointer-events-none" />
+                
+                <div className="relative bg-slate-950/95 border border-amber-400/80 rounded-2xl p-4 space-y-3 backdrop-blur-xl glowing-demo-card">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2.5">
+                      <span className="relative flex h-3 w-3 shrink-0">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
+                      </span>
+                      <div className="text-left">
+                        <h3 className="text-sm font-black text-amber-400 flex items-center gap-1.5 tracking-wide">
+                          <Zap className="w-4 h-4 text-amber-400 fill-amber-400 animate-bounce" />
+                          Test Demo Without Account
+                        </h3>
+                        <p className="text-[11px] text-slate-300 font-medium leading-tight">
+                          Test any panel in 1-click without creating an account.
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowDemoPanelSelect(!showDemoPanelSelect)}
+                      className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs shadow-md shadow-amber-500/30 transition-all hover:scale-105 shrink-0 border border-amber-200 flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>{showDemoPanelSelect ? 'Close' : 'Try Demo ⚡'}</span>
+                      <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${showDemoPanelSelect ? 'rotate-180' : ''}`} />
+                    </button>
+                  </div>
+
+                  {/* EXPANDABLE PANEL SELECTION */}
+                  {showDemoPanelSelect && (
+                    <div className="pt-3 border-t border-amber-500/30 space-y-2.5 animate-in fade-in slide-in-from-top-2 duration-300">
+                      <p className="text-xs font-black text-amber-300 flex items-center gap-1.5 uppercase tracking-wider">
+                        <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Select Which Panel You Want to Test:
+                      </p>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {/* Option 1: Applicant Panel */}
+                        <button
+                          type="button"
+                          onClick={() => handleDemoLogin('user')}
+                          className="p-2.5 rounded-xl bg-slate-900/90 hover:bg-indigo-950/90 border border-indigo-500/50 hover:border-indigo-400 text-left transition-all hover:scale-[1.02] shadow-md group/btn cursor-pointer"
+                        >
+                          <div className="flex items-center justify-between mb-0.5">
+                            <span className="text-xs font-extrabold text-indigo-300 flex items-center gap-1.5">
+                              <UserCheck className="w-3.5 h-3.5 text-indigo-400" /> Applicant Panel
+                            </span>
+                            <span className="text-[9px] bg-indigo-500/20 text-indigo-300 px-1.5 py-0.5 rounded font-mono font-bold">1-Click</span>
+                          </div>
+                          <p className="text-[10px] text-slate-400 leading-tight">
+                            View jobs, track applications & book mentors.
+                          </p>
+                        </button>
+
+                        {/* Option 2: Employer Panel */}
+                        <button
+                          type="button"
+                          onClick={() => handleDemoLogin('employer')}
+                          className="p-2.5 rounded-xl bg-slate-900/90 hover:bg-amber-950/90 border border-amber-500/50 hover:border-amber-400 text-left transition-all hover:scale-[1.02] shadow-md group/btn cursor-pointer"
+                        >
+                          <div className="flex items-center justify-between mb-0.5">
+                            <span className="text-xs font-extrabold text-amber-300 flex items-center gap-1.5">
+                              <Briefcase className="w-3.5 h-3.5 text-amber-400" /> Recruiter Panel
+                            </span>
+                            <span className="text-[9px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-mono font-bold">1-Click</span>
+                          </div>
+                          <p className="text-[10px] text-slate-400 leading-tight">
+                            Post jobs, manage applicants & hire candidates.
+                          </p>
+                        </button>
+
+                        {/* Option 3: Mentor Portal */}
+                        <button
+                          type="button"
+                          onClick={() => handleDemoLogin('mentor')}
+                          className="p-2.5 rounded-xl bg-slate-900/90 hover:bg-purple-950/90 border border-purple-500/50 hover:border-purple-400 text-left transition-all hover:scale-[1.02] shadow-md group/btn cursor-pointer"
+                        >
+                          <div className="flex items-center justify-between mb-0.5">
+                            <span className="text-xs font-extrabold text-purple-300 flex items-center gap-1.5">
+                              <GraduationCap className="w-3.5 h-3.5 text-purple-400" /> Mentor Portal
+                            </span>
+                            <span className="text-[9px] bg-purple-500/20 text-purple-300 px-1.5 py-0.5 rounded font-mono font-bold">1-Click</span>
+                          </div>
+                          <p className="text-[10px] text-slate-400 leading-tight">
+                            Manage courses, mentee requests & guidance.
+                          </p>
+                        </button>
+
+                        {/* Option 4: System Admin Panel */}
+                        <button
+                          type="button"
+                          onClick={() => handleDemoLogin('admin')}
+                          className="p-2.5 rounded-xl bg-slate-900/90 hover:bg-emerald-950/90 border border-emerald-500/50 hover:border-emerald-400 text-left transition-all hover:scale-[1.02] shadow-md group/btn cursor-pointer"
+                        >
+                          <div className="flex items-center justify-between mb-0.5">
+                            <span className="text-xs font-extrabold text-emerald-300 flex items-center gap-1.5">
+                              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> Admin Panel
+                            </span>
+                            <span className="text-[9px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded font-mono font-bold">Full Access</span>
+                          </div>
+                          <p className="text-[10px] text-slate-400 leading-tight">
+                            User database, system metrics & settings.
+                          </p>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Alert Messages */}
             {error && (

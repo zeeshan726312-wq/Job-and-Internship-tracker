@@ -1058,3 +1058,40 @@ html.light .hover-glow-card:hover {
 .status-badge-glow-rejected {
   box-shadow: 0 0 12px rgba(244, 63, 94, 0.25);
 }
+
+/* Glowing Test Demo Without Account Feature */
+@keyframes prominentDemoGlow {
+  0%, 100% {
+    box-shadow: 0 0 18px rgba(245, 158, 11, 0.65), 0 0 32px rgba(99, 102, 241, 0.4), 0 0 50px rgba(168, 85, 247, 0.3);
+    border-color: rgba(245, 158, 11, 0.85);
+  }
+  50% {
+    box-shadow: 0 0 28px rgba(245, 158, 11, 0.95), 0 0 55px rgba(99, 102, 241, 0.75), 0 0 80px rgba(168, 85, 247, 0.55);
+    border-color: rgba(251, 191, 36, 1);
+  }
+}
+
+.glowing-demo-card {
+  animation: prominentDemoGlow 2.5s infinite ease-in-out;
+  border-width: 1.5px;
+}
+
+html.light .glowing-demo-card {
+  background-color: rgba(254, 243, 199, 0.9) !important;
+  border-color: #d97706 !important;
+  color: #78350f !important;
+}
+
+@keyframes btnPulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.8), 0 0 24px rgba(245, 158, 11, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 22px rgba(245, 158, 11, 1), 0 0 40px rgba(251, 191, 36, 0.8);
+  }
+}
+
+.glowing-demo-btn {
+  animation: btnPulseGlow 2s infinite ease-in-out;
+}
+
